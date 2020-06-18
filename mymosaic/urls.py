@@ -15,8 +15,17 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+# Use static() to add url mapping to serve static files during development (only)
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 urlpatterns = [
-    path("", include("imgconvert.urls")),
     path('admin/', admin.site.urls),
+    path('', include('imgconvert.urls')),
 ]
+
+
+# dev only
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

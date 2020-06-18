@@ -7,6 +7,7 @@ verify_ssl = true
 
 [packages]
 django = "*"
+django-model-utils = "*"
 
 [requires]
 python_version = "3.8"
