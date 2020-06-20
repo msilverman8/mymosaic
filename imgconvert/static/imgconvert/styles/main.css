@@ -1,0 +1,17 @@
+.display-row, .img-container {
+  border: 1px solid black;
+}
+
+/* notes from cropperjs */
+/* Ensure the size of the image fit the container perfectly (cropperjs) */
+.img-container, .img-container img {
+  display: block;
+  width: 100%;
+  /* This rule is very important, please don't ignore this (cropperjs) */
+  max-width: 100%;
+}
+
+#containerResult {
+  overflow: hidden;
+  height: 300px;
+}
