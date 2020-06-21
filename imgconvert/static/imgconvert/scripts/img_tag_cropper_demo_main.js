@@ -52,19 +52,23 @@ window.onload = function () {
   var uploadedImageURL;
 
   // Tooltip
+  //  enable tooltips
   $('[data-toggle="tooltip"]').tooltip();
 
   // Buttons
+  // if browser doesn't support canvas
   if (!document.createElement('canvas').getContext) {
     $('button[data-method="getCroppedCanvas"]').prop('disabled', true);
   }
 
+  // if browser can't rotate image
   if (typeof document.createElement('cropper').style.transition === 'undefined') {
     $('button[data-method="rotate"]').prop('disabled', true);
     $('button[data-method="scale"]').prop('disabled', true);
   }
 
   // Download
+  // // if browser can't downlaod
   if (typeof download.download === 'undefined') {
     download.className += ' disabled';
     download.title = 'Your browser does not support download';
@@ -91,16 +95,18 @@ window.onload = function () {
     isRadio = target.type === 'radio';
 
     if (isCheckbox || isRadio) {
-      if (isCheckbox) {
+      if (isCheckbox) { // all other options not aspectRatio and viewMode
         options[target.name] = target.checked;
         cropBoxData = cropper.getCropBoxData();
         canvasData = cropper.getCanvasData();
 
+        // not changing the cropping tool, so keep previous crop on reload
         options.ready = function () {
           console.log('ready');
           cropper.setCropBoxData(cropBoxData).setCanvasData(canvasData);
         };
-      } else {
+      } else { // aspectRatio and viewMode
+        // i.e options['aspectRatio'] = 1
         options[target.name] = target.value;
         options.ready = function () {
           console.log('ready');
@@ -126,40 +132,43 @@ window.onload = function () {
       return;
     }
 
-    while (target !== this) {
+    while (target !== this) { // most inner html is a span
       if (target.getAttribute('data-method')) {
         break;
       }
 
-      target = target.parentNode;
+      target = target.parentNode; // get the parent of the span that has the method on it
     }
 
+    // if browser allows it continue
     if (target === this || target.disabled || target.className.indexOf('disabled') > -1) {
       return;
     }
 
     data = {
-      method: target.getAttribute('data-method'),
-      target: target.getAttribute('data-target'),
-      option: target.getAttribute('data-option') || undefined,
-      secondOption: target.getAttribute('data-second-option') || undefined
+      method: target.getAttribute('data-method'), // cropper method to call
+      target: target.getAttribute('data-target'), // the id of the text output
+      option: target.getAttribute('data-option') || undefined, // get cropped canvas on this site has wxh options on the elem
+      secondOption: target.getAttribute('data-second-option') || undefined // scale and move have this second option
     };
 
-    cropped = cropper.cropped;
+    cropped = cropper.cropped; // a boolean
 
-    if (data.method) {
-      if (typeof data.target !== 'undefined') {
+    // set up the display text box
+    if (data.method) { // if a method is to be called
+      if (typeof data.target !== 'undefined') { // get the output text
         input = document.querySelector(data.target);
 
         if (!target.hasAttribute('data-option') && data.target && input) {
           try {
-            data.option = JSON.parse(input.value);
+            data.option = JSON.parse(input.value); // convert the data to json readable
           } catch (e) {
             console.log(e.message);
           }
         }
       }
 
+      // set it up for cropper
       switch (data.method) {
         case 'rotate':
           if (cropped && options.viewMode > 0) {
@@ -177,18 +186,20 @@ window.onload = function () {
 
           if (uploadedImageType === 'image/jpeg') {
             if (!data.option) {
-              data.option = {};
+              data.option = {}; // make sure there is a dict value being passed even if it err'd out
             }
 
-            data.option.fillColor = '#fff';
+            data.option.fillColor = '#fff'; // fill with white so theres no transparency
           }
 
           break;
       }
 
+      //       cropper .callMethod(options, second option)
       result = cropper[data.method](data.option, data.secondOption);
 
       switch (data.method) {
+        // cropper was cleared then passed the rotate params then here the crop tool is re added
         case 'rotate':
           if (cropped && options.viewMode > 0) {
             cropper.crop();
@@ -226,6 +237,7 @@ window.onload = function () {
           break;
       }
 
+      // output any other result to the text display
       if (typeof result === 'object' && result !== cropper && input) {
         try {
           input.value = JSON.stringify(result);

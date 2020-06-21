@@ -38,8 +38,17 @@
     </div>
   </div> <!-- end display images row -->
   <div class="row">
-    <input type="file" id="importImage" name="file" accept="image/*">
+    <div class="col-md-6">
+      <input type="file" id="importImage" name="file" accept="image/*">
+    </div>
+    <div id="paletteContainer" class="col-md-6">
+    </div>
   </div> <!-- end controls row -->
+  <div class="row">
+    <div id="mosaicContainer" class="col align-self-center">
+
+    </div>
+  </div>
 
 </div>
 
@@ -52,7 +61,6 @@
 <!-- local scripts -->
 <script type="text/javascript" src="{% static 'imgconvert/scripts/img_tag_cropper_demo_cropper.js' %}"></script>
 
-<script type="text/javascript" src="{% static 'imgconvert/scripts/main.js' %}"></script>
 <script type="text/javascript" src="{% static 'imgconvert/scripts/main.js' %}"></script>
 
 </body>

@@ -12,6 +12,12 @@
 }
 
 #containerResult {
-  overflow: hidden;
-  height: 300px;
+  /* overflow: hidden; */
+  /* height: 300px; */
+}
+
+.sample-colors {
+  display: inline-block;
+  height: 50px;
+  width: 50px;
 }

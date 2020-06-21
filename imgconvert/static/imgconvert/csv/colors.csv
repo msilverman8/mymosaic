@@ -1,0 +1,185 @@
+id,name,rgb,is_trans,RGB,is_topcolors,is_greyscale,is_blackwhite
+-1,[Unknown],0033B2,f,"(0, 51, 178)",f,f,f
+0,Black,05131D,f,"(5, 19, 29)",t,t,t
+1,Blue,0055BF,f,"(0, 85, 191)",t,f,f
+2,Green,237841,f,"(35, 120, 65)",f,f,f
+3,Dark Turquoise,008F9B,f,"(0, 143, 155)",f,f,f
+4,Red,C91A09,f,"(201, 26, 9)",t,f,f
+5,Dark Pink,C870A0,f,"(200, 112, 160)",f,f,f
+6,Brown,583927,f,"(88, 57, 39)",f,f,f
+7,Light Gray,9BA19D,f,"(155, 161, 157)",f,f,f
+8,Dark Gray,6D6E5C,f,"(109, 110, 92)",f,f,f
+9,Light Blue,B4D2E3,f,"(180, 210, 227)",f,f,f
+10,Bright Green,4B9F4A,f,"(75, 159, 74)",f,f,f
+11,Light Turquoise,55A5AF,f,"(85, 165, 175)",f,f,f
+12,Salmon,F2705E,f,"(242, 112, 94)",f,f,f
+13,Pink,FC97AC,f,"(252, 151, 172)",f,f,f
+14,Yellow,F2CD37,f,"(242, 205, 55)",t,f,f
+15,White,FFFFFF,f,"(255, 255, 255)",t,t,t
+17,Light Green,C2DAB8,f,"(194, 218, 184)",f,f,f
+18,Light Yellow,FBE696,f,"(251, 230, 150)",f,f,f
+19,Tan,E4CD9E,f,"(228, 205, 158)",t,f,f
+20,Light Violet,C9CAE2,f,"(201, 202, 226)",f,f,f
+21,Glow In Dark Opaque,D4D5C9,f,"(212, 213, 201)",f,f,f
+22,Purple,81007B,f,"(129, 0, 123)",f,f,f
+23,Dark Blue-Violet,2032B0,f,"(32, 50, 176)",f,f,f
+25,Orange,FE8A18,f,"(254, 138, 24)",f,f,f
+26,Magenta,923978,f,"(146, 57, 120)",f,f,f
+27,Lime,BBE90B,f,"(187, 233, 11)",f,f,f
+28,Dark Tan,958A73,f,"(149, 138, 115)",t,f,f
+29,Bright Pink,E4ADC8,f,"(228, 173, 200)",f,f,f
+30,Medium Lavender,AC78BA,f,"(172, 120, 186)",f,f,f
+31,Lavender,E1D5ED,f,"(225, 213, 237)",f,f,f
+32,Trans-Black IR Lens,635F52,t,"(99, 95, 82)",f,f,f
+33,Trans-Dark Blue,0020A0,t,"(0, 32, 160)",f,f,f
+34,Trans-Green,84B68D,t,"(132, 182, 141)",f,f,f
+35,Trans-Bright Green,D9E4A7,t,"(217, 228, 167)",f,f,f
+36,Trans-Red,C91A09,t,"(201, 26, 9)",f,f,f
+40,Trans-Black,635F52,t,"(99, 95, 82)",f,f,f
+41,Trans-Light Blue,AEEFEC,t,"(174, 239, 236)",f,f,f
+42,Trans-Neon Green,F8F184,t,"(248, 241, 132)",f,f,f
+43,Trans-Very Lt Blue,C1DFF0,t,"(193, 223, 240)",f,f,f
+45,Trans-Dark Pink,DF6695,t,"(223, 102, 149)",f,f,f
+46,Trans-Yellow,F5CD2F,t,"(245, 205, 47)",f,f,f
+47,Trans-Clear,FCFCFC,t,"(252, 252, 252)",f,f,f
+52,Trans-Purple,A5A5CB,t,"(165, 165, 203)",f,f,f
+54,Trans-Neon Yellow,DAB000,t,"(218, 176, 0)",f,f,f
+57,Trans-Neon Orange,FF800D,t,"(255, 128, 13)",f,f,f
+60,Chrome Antique Brass,645A4C,f,"(100, 90, 76)",f,f,f
+61,Chrome Blue,6C96BF,f,"(108, 150, 191)",f,f,f
+62,Chrome Green,3CB371,f,"(60, 179, 113)",f,f,f
+63,Chrome Pink,AA4D8E,f,"(170, 77, 142)",f,f,f
+64,Chrome Black,1B2A34,f,"(27, 42, 52)",f,f,f
+68,Very Light Orange,F3CF9B,f,"(243, 207, 155)",f,f,f
+69,Light Purple,CD6298,f,"(205, 98, 152)",f,f,f
+70,Reddish Brown,582A12,f,"(88, 42, 18)",f,f,f
+71,Light Bluish Gray,A0A5A9,f,"(160, 165, 169)",t,t,f
+72,Dark Bluish Gray,6C6E68,f,"(108, 110, 104)",t,t,f
+73,Medium Blue,5A93DB,f,"(90, 147, 219)",f,f,f
+74,Medium Green,73DCA1,f,"(115, 220, 161)",f,f,f
+75,Speckle Black-Copper,05131D,f,"(5, 19, 29)",f,f,f
+76,Speckle DBGray-Silver,6C6E68,f,"(108, 110, 104)",f,f,f
+77,Light Pink,FECCCF,f,"(254, 204, 207)",f,f,f
+78,Light Flesh,F6D7B3,f,"(246, 215, 179)",f,f,f
+79,Milky White,FFFFFF,f,"(255, 255, 255)",f,f,f
+80,Metallic Silver,A5A9B4,f,"(165, 169, 180)",f,f,f
+81,Metallic Green,899B5F,f,"(137, 155, 95)",f,f,f
+82,Metallic Gold,DBAC34,f,"(219, 172, 52)",f,f,f
+84,Medium Dark Flesh,CC702A,f,"(204, 112, 42)",f,f,f
+85,Dark Purple,3F3691,f,"(63, 54, 145)",f,f,f
+86,Dark Flesh,7C503A,f,"(124, 80, 58)",t,f,f
+89,Royal Blue,4C61DB,f,"(76, 97, 219)",f,f,f
+92,Flesh,D09168,f,"(208, 145, 104)",f,f,f
+100,Light Salmon,FEBABD,f,"(254, 186, 189)",f,f,f
+110,Violet,4354A3,f,"(67, 84, 163)",f,f,f
+112,Blue-Violet,6874CA,f,"(104, 116, 202)",f,f,f
+114,Glitter Trans-Dark Pink,DF6695,t,"(223, 102, 149)",f,f,f
+115,Medium Lime,C7D23C,f,"(199, 210, 60)",f,f,f
+117,Glitter Trans-Clear,FFFFFF,t,"(255, 255, 255)",f,f,f
+118,Aqua,B3D7D1,f,"(179, 215, 209)",f,f,f
+120,Light Lime,D9E4A7,f,"(217, 228, 167)",f,f,f
+125,Light Orange,F9BA61,f,"(249, 186, 97)",f,f,f
+129,Glitter Trans-Purple,A5A5CB,t,"(165, 165, 203)",f,f,f
+132,Speckle Black-Silver,05131D,f,"(5, 19, 29)",f,f,f
+133,Speckle Black-Gold,05131D,f,"(5, 19, 29)",f,f,f
+134,Copper,AE7A59,f,"(174, 122, 89)",f,f,f
+135,Pearl Light Gray,9CA3A8,f,"(156, 163, 168)",f,f,f
+137,Metal Blue,7988A1,f,"(121, 136, 161)",f,f,f
+142,Pearl Light Gold,DCBC81,f,"(220, 188, 129)",f,f,f
+143,Trans-Medium Blue,CFE2F7,t,"(207, 226, 247)",f,f,f
+148,Pearl Dark Gray,575857,f,"(87, 88, 87)",f,f,f
+150,Pearl Very Light Gray,ABADAC,f,"(171, 173, 172)",f,f,f
+151,Very Light Bluish Gray,E6E3E0,f,"(230, 227, 224)",f,f,f
+158,Yellowish Green,DFEEA5,f,"(223, 238, 165)",f,f,f
+178,Flat Dark Gold,B48455,f,"(180, 132, 85)",f,f,f
+179,Flat Silver,898788,f,"(137, 135, 136)",f,f,f
+182,Trans-Orange,F08F1C,t,"(240, 143, 28)",f,f,f
+183,Pearl White,F2F3F2,f,"(242, 243, 242)",f,f,f
+191,Bright Light Orange,F8BB3D,f,"(248, 187, 61)",f,f,f
+212,Bright Light Blue,9FC3E9,f,"(159, 195, 233)",f,f,f
+216,Rust,B31004,f,"(179, 16, 4)",f,f,f
+226,Bright Light Yellow,FFF03A,f,"(255, 240, 58)",f,f,f
+230,Trans-Pink,E4ADC8,t,"(228, 173, 200)",f,f,f
+232,Sky Blue,7DBFDD,f,"(125, 191, 221)",f,f,f
+236,Trans-Light Purple,96709F,t,"(150, 112, 159)",f,f,f
+272,Dark Blue,0A3463,f,"(10, 52, 99)",f,f,f
+288,Dark Green,184632,f,"(24, 70, 50)",f,f,f
+294,Glow In Dark Trans,BDC6AD,t,"(189, 198, 173)",f,f,f
+297,Pearl Gold,AA7F2E,f,"(170, 127, 46)",f,f,f
+308,Dark Brown,352100,f,"(53, 33, 0)",f,f,f
+313,Maersk Blue,3592C3,f,"(53, 146, 195)",f,f,f
+320,Dark Red,720E0F,f,"(114, 14, 15)",f,f,f
+321,Dark Azure,078BC9,f,"(7, 139, 201)",f,f,f
+322,Medium Azure,36AEBF,f,"(54, 174, 191)",f,f,f
+323,Light Aqua,ADC3C0,f,"(173, 195, 192)",f,f,f
+326,Olive Green,9B9A5A,f,"(155, 154, 90)",f,f,f
+334,Chrome Gold,BBA53D,f,"(187, 165, 61)",f,f,f
+335,Sand Red,D67572,f,"(214, 117, 114)",f,f,f
+351,Medium Dark Pink,F785B1,f,"(247, 133, 177)",f,f,f
+366,Earth Orange,FA9C1C,f,"(250, 156, 28)",f,f,f
+373,Sand Purple,8.45E+086,f,"(132, 94, 132)",f,f,f
+378,Sand Green,A0BCAC,f,"(160, 188, 172)",f,f,f
+379,Sand Blue,6074A1,f,"(96, 116, 161)",f,f,f
+383,Chrome Silver,E0E0E0,f,"(224, 224, 224)",f,f,f
+450,Fabuland Brown,B67B50,f,"(182, 123, 80)",f,f,f
+462,Medium Orange,FFA70B,f,"(255, 167, 11)",f,f,f
+484,Dark Orange,A95500,f,"(169, 85, 0)",f,f,f
+503,Very Light Gray,E6E3DA,f,"(230, 227, 218)",f,f,f
+1000,Glow in Dark White,D9D9D9,f,"(217, 217, 217)",f,f,f
+1001,Medium Violet,93910000,f,"(147, 145, 228)",f,f,f
+1002,Glitter Trans-Neon Green,C0F500,t,"(192, 245, 0)",f,f,f
+1003,Glitter Trans-Light Blue,68BCC5,t,"(104, 188, 197)",f,f,f
+1004,Trans Flame Yellowish Orange,FCB76D,t,"(252, 183, 109)",f,f,f
+1005,Trans Fire Yellow,FBE890,t,"(251, 232, 144)",f,f,f
+1006,Trans Light Royal Blue,B4D4F7,t,"(180, 212, 247)",f,f,f
+1007,Reddish Lilac,8E5597,f,"(142, 85, 151)",f,f,f
+1008,Vintage Blue,039CBD,f,"(3, 156, 189)",f,f,f
+1009,Vintage Green,1E601E,f,"(30, 96, 30)",f,f,f
+1010,Vintage Red,CA1F08,f,"(202, 31, 8)",f,f,f
+1011,Vintage Yellow,F3C305,f,"(243, 195, 5)",f,f,f
+1012,Fabuland Orange,EF9121,f,"(239, 145, 33)",f,f,f
+1013,Modulex White,F4F4F4,f,"(244, 244, 244)",f,f,f
+1014,Modulex Light Bluish Gray,AfB5C7,f,"(175, 181, 199)",f,f,f
+1015,Modulex Light Gray,9C9C9C,f,"(156, 156, 156)",f,f,f
+1016,Modulex Charcoal Gray,595D60,f,"(89, 93, 96)",f,f,f
+1017,Modulex Tile Gray,6B5A5A,f,"(107, 90, 90)",f,f,f
+1018,Modulex Black,4D4C52,f,"(77, 76, 82)",f,f,f
+1019,Modulex Tile Brown,330000,f,"(51, 0, 0)",f,f,f
+1020,Modulex Terracotta,5C5030,f,"(92, 80, 48)",f,f,f
+1021,Modulex Brown,907450,f,"(144, 116, 80)",f,f,f
+1022,Modulex Buff,DEC69C,f,"(222, 198, 156)",f,f,f
+1023,Modulex Red,B52C20,f,"(181, 44, 32)",f,f,f
+1024,Modulex Pink Red,F45C40,f,"(244, 92, 64)",f,f,f
+1025,Modulex Orange,F47B30,f,"(244, 123, 48)",f,f,f
+1026,Modulex Light Orange,F7AD63,f,"(247, 173, 99)",f,f,f
+1027,Modulex Light Yellow,FFE371,f,"(255, 227, 113)",f,f,f
+1028,Modulex Ochre Yellow,FED557,f,"(254, 213, 87)",f,f,f
+1029,Modulex Lemon,BDC618,f,"(189, 198, 24)",f,f,f
+1030,Modulex Pastel Green,7DB538,f,"(125, 181, 56)",f,f,f
+1031,Modulex Olive Green,7C9051,f,"(124, 144, 81)",f,f,f
+1032,Modulex Aqua Green,27867E,f,"(39, 134, 126)",f,f,f
+1033,Modulex Teal Blue,467083,f,"(70, 112, 131)",f,f,f
+1034,Modulex Tile Blue,0057A6,f,"(0, 87, 166)",f,f,f
+1035,Modulex Medium Blue,61AFFF,f,"(97, 175, 255)",f,f,f
+1036,Modulex Pastel Blue,68AECE,f,"(104, 174, 206)",f,f,f
+1037,Modulex Violet,BD7D85,f,"(189, 125, 133)",f,f,f
+1038,Modulex Pink,F785B1,f,"(247, 133, 177)",f,f,f
+1039,Modulex Clear,FFFFFF,f,"(255, 255, 255)",f,f,f
+1040,Modulex Foil Dark Gray,595D60,f,"(89, 93, 96)",f,f,f
+1041,Modulex Foil Light Gray,9C9C9C,f,"(156, 156, 156)",f,f,f
+1042,Modulex Foil Dark Green,6400,f,"(0, 100, 0)",f,f,f
+1043,Modulex Foil Light Green,7DB538,f,"(125, 181, 56)",f,f,f
+1044,Modulex Foil Dark Blue,0057A6,f,"(0, 87, 166)",f,f,f
+1045,Modulex Foil Light Blue,68AECE,f,"(104, 174, 206)",f,f,f
+1046,Modulex Foil Violet,4B0082,f,"(75, 0, 130)",f,f,f
+1047,Modulex Foil Red,8B0000,f,"(139, 0, 0)",f,f,f
+1048,Modulex Foil Yellow,FED557,f,"(254, 213, 87)",f,f,f
+1049,Modulex Foil Orange,F7AD63,f,"(247, 173, 99)",f,f,f
+1050,Coral,FF698F,f,"(255, 105, 143)",f,f,f
+1051,Pastel Blue,5AC4DA,f,"(90, 196, 218)",f,f,f
+1052,Glitter Trans-Orange,F08F1C,t,"(240, 143, 28)",f,f,f
+1053,Trans-Blue Opal,68BCC5,t,"(104, 188, 197)",f,f,f
+1054,Trans-Medium Reddish Violet Opal,CE1D9B,t,"(206, 29, 155)",f,f,f
+1055,Trans-Clear Opal,FCFCFC,t,"(252, 252, 252)",f,f,f
+1056,Trans-Brown Opal,583927,t,"(88, 57, 39)",f,f,f
+9999,[No Color/Any Color],05131D,f,"(5, 19, 29)",f,f,f
