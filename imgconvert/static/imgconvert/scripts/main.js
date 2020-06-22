@@ -2,20 +2,19 @@ window.onload = function () {
   console.log('main js loaded');
   'use strict';
 
-  //keys = CL, GR, BW
-  //values are array of rgb [0,0,0]
-  var colors;
-  getColorList();
-
-  // order kit requirements
-  const basePlate = 32; // might be good to have this here
-  const dimensionsChoices = [
-    [2, 2],
-    [2, 3],
-    [3, 2]
-  ];
-  // the aspect ratio to be multiplied by 32
-  var dimensions = dimensionsChoices[0]; // default is a 64 x 64 square
+  // MAIN GLOBALS
+  // values are { userColor : [ {r,g,b}, ] }
+  var USERCHOICE = {
+        color: 'CL', // one of ['CL', 'GR', 'BW']
+        basePlate: 32,
+        x: 64,
+        y: 64,
+        tileWidth: 8,
+        get tileHeight(){return this.tileWidth},
+        get aspectRatio(){return this.x / this.y},
+        get isSquare(){return this.x == this.y},
+      },
+      PALETTE = null;
 
 
   // cropper variables
@@ -25,62 +24,116 @@ window.onload = function () {
       containerMain = document.getElementById('containerUploaded'),
       image = document.getElementById('imgUploaded'),
       // preview result container
-      containerResult = document.getElementById('containerResult');
+      containerResult = document.getElementById('containerResult'),
+      // the cropper docs
+      // https://github.com/fengyuanchen/cropperjs#options
+      // options for the cropper object
+      options = {
+        aspectRatio: USERCHOICE.aspectRatio,
+        ready: function (e) {
+          console.log(e.type);
+          // there should be a better way to do this, but for now
+          if(PALETTE === null){
+            getColorList();
+          }else{
+            canvasPreview(PALETTE[USERCHOICE.color]);
+          }
+        },
+        // preview: containerResult,
+        viewMode: 2,
+        cropstart: function (e) {
+          console.log(e.type, e.detail.action);
+        },
+        cropmove: function (e) {
+          // console.log(e.type, e.detail.action);
+        },
+        cropend: function (e) {
+          console.log(e.type, e.detail.action);
+          // there should be a better way to do this, but for now
+          if(PALETTE === null){
+            getColorList();
+          }else{
+            canvasPreview(PALETTE[USERCHOICE.color]);
+          }
+        },
+        crop: function (e) {
+          var data = e.detail;
+          console.log(e.type);
 
-  // the cropper docs
-  // https://github.com/fengyuanchen/cropperjs#options
-  // options for the cropper object
-  var options = {
-    aspectRatio: dimensions[0] / dimensions[1],
-    ready: function (e) {
-      console.log(e.type);
-      canvasPreview();
-    },
-    // preview: containerResult,
-    viewMode: 2,
-    cropstart: function (e) {
-      console.log(e.type, e.detail.action);
-    },
-    cropmove: function (e) {
-      // console.log(e.type, e.detail.action);
-    },
-    cropend: function (e) {
-      console.log(e.type, e.detail.action);
-      canvasPreview();
-    },
-    crop: function (e) {
-      var data = e.detail;
-      console.log(e.type);
-
-    },
-    zoom: function (e) {
-      console.log(e.type, e.detail.ratio);
-    }
-  };
-
-  // keep track of image upload object values
-  var cropper = new Cropper(image, options),
-      originalImageURL,
+        },
+        zoom: function (e) {
+          console.log(e.type, e.detail.ratio);
+        }
+      },
+      // keep track of image upload object values
+      cropper = new Cropper(image, options),
       uploadedImageType,
       uploadedImageName,
       uploadedImageURL,
       previewSize;
 
-  // get a canvas object from the cropper plugin and mosaic-ify it
-  function canvasPreview(){
-      if (!colors) {
-        console.log('colors never loaded!');
-        return
+  // makes a call to the server to get the allowed colors for conversion
+  async function getColorList(){
+    console.log(' --!! getting color list !!--');
+    // get color choices from the server
+    // should return { userChoice : [ {rgb}, ]  }
+    fetch('getColorList/')
+    .then(
+      function(response) {
+        if (response.status !== 200) {
+          console.log('response not OK. Status Code: ' + response.status);
+          PALETTE = null;
+          return;
+        }
+        // status OK
+        response.json().then(function(data) {
+          console.log(`using color choice ${USERCHOICE.color}`);
+          canvasPreview(data[USERCHOICE.color]);
+          PALETTE = data;
+          // for dev
+          displayPalette(data[USERCHOICE.color]);
+        });
       }
-      const sqCanvas = 384;
-      // var cbd = cropper.getCropBoxData();
-      // var cbdData = {
-      //   h: Math.round(cbd.height),
-      //   w: Math.round(cbd.width),
-      // };
-      var ops = {
-        height: sqCanvas,
-        width: sqCanvas,
+    )
+    .catch(function(err) {
+      console.log('Fetch Error: ', err);
+      PALETTE = null;
+    });
+  } // end get color list
+
+  // format color corrected image to baseplate dimensions
+  function boooMathboooooo(width, height){
+    console.log(' --- calculating something probably --- ');
+
+    // get how moany plates are in the image
+    let divosorX = USERCHOICE.x / USERCHOICE.basePlate;
+    let divisrY = USERCHOICE.y / USERCHOICE.basePlate;
+
+    // get the pixel value of what should become one plate
+    let oneWidth = width / divisorX;
+    let oneHeight = height / divisorY;
+
+    // get the pixel values of what is a one x one unit
+    let oneUnitWidth = oneWidth / USERCHOICE.basePlate;
+    let oneUnitHeight = oneHeight / USERCHOICE.basePlate;
+
+
+
+  }
+  /**
+  *  get a canvas object from the cropper plugin and send it thru PhotoMosaic
+  * @param {Object} palette contains the colors allowed
+  */
+  function canvasPreview(palette){
+      console.log(' ---  canvas preview --- ');
+      const previewWidth = USERCHOICE.x * USERCHOICE.tileWidth;
+      const previewHeight = USERCHOICE.y * USERCHOICE.tileHeight;
+
+
+
+      let ops = {
+        width: previewWidth,
+        height: previewHeight,
         // suggestions from docs
         minWidth: 256,
         minHeight: 256,
@@ -90,98 +143,82 @@ window.onload = function () {
         // imageSmoothingEnabled: false,
         // imageSmoothingQuality: 'high',
       };
-      var canvas = cropper.getCroppedCanvas(ops);
-      var ctx = canvas.getContext('2d');
+      let canvas = cropper.getCroppedCanvas(ops);
+      let ctx = canvas.getContext('2d');
 
-      var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       var data = imageData.data;
 
       var mappedColor;
       for (var i = 0; i < data.length; i += 4) {
-          mappedColor = mapColorToPalette(data[i], data[i + 1], data[i + 2]);
+          mappedColor = mapColorToPalette(data[i], data[i + 1], data[i + 2], palette);
           if (data[i + 3] > 10) {
-              data[i] = mappedColor[0];
-              data[i + 1] = mappedColor[1];
-              data[i + 2] = mappedColor[2];
+              data[i] = mappedColor.r;
+              data[i + 1] = mappedColor.g;
+              data[i + 2] = mappedColor.b;
           }
       }
-      ctx.putImageData(imageData, 0, 0);
 
+      console.log('------ finished color conversion -----');
+      console.log(`canvas width: ${canvas.width} matches preview Width ${previewWidth}?`);
+      console.log(canvas.width == previewWidth);
+      console.log(`canvas height: ${canvas.height} matches preview Height ${previewHeight}?`);
+      console.log(canvas.height == previewHeight);
 
-      // var grayscale = function() {
-      //   for (var i = 0; i < data.length; i += 4) {
-      //     var avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      //     data[i]     = avg; // red
-      //     data[i + 1] = avg; // green
-      //     data[i + 2] = avg; // blue
-      //   }
-      //   ctx.putImageData(imageData, 0, 0);
-      // };
+      // call PhotoMosaic
+      let photomosaic = new PhotoMosaic({
+        targetElement: containerResult,
+        imageData: imageData,
+        width: previewWidth,
+        height: previewHeight,
+        tileWidth: USERCHOICE.tileWidth,
+        tileHeight: USERCHOICE.tileHeight,
+        divX: previewWidth / USERCHOICE.tileWidth,
+        divY: previewHeight / USERCHOICE.tileHeight,
+        tileShape: 'rectangle',
+        // opacity: 1,
+      })
 
+    photomosaic.tileCanvas();
+  } // end preview canvas
 
-
-      // add canvas to DOM
-      containerResult.innerHTML = '';
-      containerResult.appendChild(canvas);
-
-  }
-
-  // use Euclidian distance to find closest color
-  function mapColorToPalette(red, green, blue) {
-      var color, diffR, diffG, diffB, diffDistance, mappedColor;
+  /**
+  * use Euclidian distance to find closest color
+  * @param {integer} red the numerical value of the red data in the pixel
+  * @param {integer} green the numerical value of the green data in the pixel
+  * @param {integer} blue the numerical value of the blue data in the pixel
+  * @param {object} palette the colors to be mapped to
+  * @returns {object} a dictionary of keys r,g,b values are integers
+  */
+  function mapColorToPalette(red, green, blue, palette) {
+      var diffR, diffG, diffB, diffDistance, mappedColor;
       var distance = 25000;
-      var palette = colors['CL'];
-      for (var i = 0; i < palette.length; i++) {
-          color = palette[i];
-          diffR = (color[0] - red);
-          diffG = (color[1] - green);
-          diffB = (color[2] - blue);
-          diffDistance = diffR * diffR + diffG * diffG + diffB * diffB;
-          if (diffDistance < distance) {
-              distance = diffDistance;
-              mappedColor = palette[i];
-          };
-      }
+      palette.forEach((rgb) => {
+        diffR = (rgb.r - red);
+        diffG = (rgb.g - green);
+        diffB = (rgb.b - blue);
+        diffDistance = diffR * diffR + diffG * diffG + diffB * diffB;
+        if (diffDistance < distance) {
+            distance = diffDistance;
+            mappedColor = rgb;
+        };
+      });
       return (mappedColor);
+  } // end map color
+
+  function displayPalette(palette){
+    // palette - the array of rgb dict vals
+    // easy visual for development
+    // display colors for mosaic
+    let cls = 'sample-colors';
+    let spanContainer = document.getElementById('paletteContainer');
+    palette.forEach((val) => {
+      let span = document.createElement('span');
+      span.classList.add(cls);
+      span.style.backgroundColor = 'rgba('+ val.r +', '+ val.g +', '+val.b+')';
+      spanContainer.appendChild(span);
+    });
   }
-
-
-  function getColorList(){
-    let colorChoices = {};
-    // make a call to the server to get the colors
-    fetch('getColorList/')
-    .then((response) => response.json())
-    .then((data) => {
-        console.log(data);
-        var key = 'CL'
-        colorChoices[key] = [];
-        data[key].forEach((val) => {
-          // val looks like '(0, 0, 0)'
-          let str = val.substring(1, val.length-1);
-          str = str.replace(/\s/g, '');
-          colorChoices[key].push(str.split(','));
-        });
-        console.log(colorChoices[key]);
-        colors = colorChoices;
-
-        let cls = 'sample-colors';
-        let spanContainer = document.getElementById('paletteContainer');
-        colorChoices[key].forEach((val) => {
-          let span = document.createElement('span');
-          span.classList.add(cls);
-          span.style.backgroundColor = 'rgba('+ val[0] +', '+ val[1] +', '+val[2]+')';
-          spanContainer.appendChild(span);
-        });
-
-    }).catch(function(error){
-      console.log('error!!!!');
-      console.log(error);
-      colorChoices = null;
-      colors = colorChoices;
-    })
-
-  }
-
 
   // Import image
   var importImage = document.getElementById('importImage');

@@ -13,9 +13,9 @@ class Index(TemplateView):
 
 def get_color_list(request):
     response = {
-        'CL': BrickMosaic().get_top_colors(),
-        # 'GR': BrickMosaic().get_greyscale(),
-        # 'BW': BrickMosaic().get_blackwhite()
+        'CL': BrickMosaic().get_filtered_colors('CL'),
+        # 'GR': BrickMosaic().get_filtered_colors('GR'),
+        # 'BW': BrickMosaic().get_filtered_colors('BW'),
     }
     return JsonResponse(response)
 

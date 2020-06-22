@@ -1,4 +1,6 @@
 # from PIL import Image
+import ast
+
 import pandas as pd
 # from ast import literal_eval
 # from PIL import ImageFilter
@@ -61,30 +63,31 @@ class BrickMosaic:
         "filters dataframe that contain strings listed in list_filter_strings"
         return dataframe[~dataframe.name.str.contains('|'.join(list_filter_strings))]
 
-    def get_top_colors(self):
+    def get_filtered_colors(self, choice):
         """
-        returns a list of the topcolors
+        choice : one of 'CL', 'GR', 'BW'
+        returns a list of dictionaries based on choice passed
+        [{r:0,g:0,b:0 },{r:0,g:0,b:0 },{...}]
         """
+        choices = {
+            'CL': 'is_topcolors',
+            'GR': 'is_greyscale',
+            'BW': 'is_blackwhite',
+        }
         df = self.load_color_df()
-        color_df = self.filter_df_topcolors(df)
-        ls = color_df['RGB'].to_list()
-        return ls
+        filtered_df = df.loc[df[choices[choice]] == 't']
+        ls = filtered_df['RGB'].to_list()
 
-    def get_greyscale(self):
-        """
-        returns a list of the greyscale
-        """
-        df = self.load_color_df()
-        color_df = self.filter_df_greyscale(df)
-        return color_df['RGB'].to_list()
+        data = []
+        for val in ls:
+            rgb = ast.literal_eval(val)
+            data.append({
+                'r': rgb[0],
+                'g': rgb[1],
+                'b': rgb[2]
+            })
 
-    def get_blackwhite(self):
-        """
-        returns a list of the black & white
-        """
-        df = self.load_color_df()
-        color_df = self.filter_df_blackwhite(df)
-        return color_df['RGB'].to_list()
+        return data
 
     # def change_to_df_colors(self, image, dataframe):
     #     list_data = list(image.getdata())
