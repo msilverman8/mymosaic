@@ -1,9 +1,6 @@
-# from PIL import Image
 import ast
-
 import pandas as pd
-# from ast import literal_eval
-# from PIL import ImageFilter
+# from PIL import ImageFilter, Image
 # import numpy
 # import cv2
 # import face_recognition
@@ -73,10 +70,14 @@ class BrickMosaic:
             'CL': 'is_topcolors',
             'GR': 'is_greyscale',
             'BW': 'is_blackwhite',
+            'ALL': 'is_all',
         }
         df = self.load_color_df()
-        filtered_df = df.loc[df[choices[choice]] == 't']
-        ls = filtered_df['RGB'].to_list()
+        if choices[choice] == 'is_all':
+            ls = df['RGB'].to_list()
+        else:
+            filtered_df = df.loc[df[choices[choice]] == 't']
+            ls = filtered_df['RGB'].to_list()
 
         data = []
         for val in ls:

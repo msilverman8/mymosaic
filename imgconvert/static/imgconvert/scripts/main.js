@@ -3,7 +3,6 @@ window.onload = function () {
   'use strict';
 
   // MAIN GLOBALS
-  // values are { userColor : [ {r,g,b}, ] }
   var USERCHOICE = {
         color: 'CL', // one of ['CL', 'GR', 'BW']
         basePlate: 32,
@@ -12,8 +11,9 @@ window.onload = function () {
         tileWidth: 8,
         get tileHeight(){return this.tileWidth},
         get aspectRatio(){return this.x / this.y},
-        get isSquare(){return this.x == this.y},
+        // get isSquare(){return this.x == this.y},
       },
+      // values are { userColor : [ {r,g,b}, ] }
       PALETTE = null;
 
 
@@ -101,110 +101,48 @@ window.onload = function () {
     });
   } // end get color list
 
-  // format color corrected image to baseplate dimensions
-  function boooMathboooooo(width, height){
-    console.log(' --- calculating something probably --- ');
-
-    // get how moany plates are in the image
-    let divosorX = USERCHOICE.x / USERCHOICE.basePlate;
-    let divisrY = USERCHOICE.y / USERCHOICE.basePlate;
-
-    // get the pixel value of what should become one plate
-    let oneWidth = width / divisorX;
-    let oneHeight = height / divisorY;
-
-    // get the pixel values of what is a one x one unit
-    let oneUnitWidth = oneWidth / USERCHOICE.basePlate;
-    let oneUnitHeight = oneHeight / USERCHOICE.basePlate;
-
-
-
-  }
   /**
   *  get a canvas object from the cropper plugin and send it thru PhotoMosaic
   * @param {Object} palette contains the colors allowed
   */
   function canvasPreview(palette){
-      console.log(' ---  canvas preview --- ');
-      const previewWidth = USERCHOICE.x * USERCHOICE.tileWidth;
-      const previewHeight = USERCHOICE.y * USERCHOICE.tileHeight;
+    console.log(' ---  canvas preview --- ');
+    const previewWidth = USERCHOICE.x * USERCHOICE.tileWidth;
+    const previewHeight = USERCHOICE.y * USERCHOICE.tileHeight;
+
+    // first get Cropped canvas
+    let ops = {
+      width: previewWidth,
+      height: previewHeight,
+      // suggestions from docs
+      minWidth: 256,
+      minHeight: 256,
+      maxWidth: 4096,
+      maxHeight: 4096,
+      // fillColor: '#fff',
+      // imageSmoothingEnabled: false,
+      // imageSmoothingQuality: 'high',
+    };
 
 
-
-      let ops = {
-        width: previewWidth,
-        height: previewHeight,
-        // suggestions from docs
-        minWidth: 256,
-        minHeight: 256,
-        maxWidth: 4096,
-        maxHeight: 4096,
-        // fillColor: '#fff',
-        // imageSmoothingEnabled: false,
-        // imageSmoothingQuality: 'high',
-      };
-      let canvas = cropper.getCroppedCanvas(ops);
-      let ctx = canvas.getContext('2d');
-
-      let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      var data = imageData.data;
-
-      var mappedColor;
-      for (var i = 0; i < data.length; i += 4) {
-          mappedColor = mapColorToPalette(data[i], data[i + 1], data[i + 2], palette);
-          if (data[i + 3] > 10) {
-              data[i] = mappedColor.r;
-              data[i + 1] = mappedColor.g;
-              data[i + 2] = mappedColor.b;
-          }
-      }
-
-      console.log('------ finished color conversion -----');
-      console.log(`canvas width: ${canvas.width} matches preview Width ${previewWidth}?`);
-      console.log(canvas.width == previewWidth);
-      console.log(`canvas height: ${canvas.height} matches preview Height ${previewHeight}?`);
-      console.log(canvas.height == previewHeight);
-
-      // call PhotoMosaic
-      let photomosaic = new PhotoMosaic({
-        targetElement: containerResult,
-        imageData: imageData,
-        width: previewWidth,
-        height: previewHeight,
-        tileWidth: USERCHOICE.tileWidth,
-        tileHeight: USERCHOICE.tileHeight,
-        divX: previewWidth / USERCHOICE.tileWidth,
-        divY: previewHeight / USERCHOICE.tileHeight,
-        tileShape: 'rectangle',
-        // opacity: 1,
-      })
-
+    // call PhotoMosaic to tile the image
+    let photomosaic = new PhotoMosaic({
+      // imageData: imageData,
+      targetElement: containerResult,
+      palette: palette,
+      canvas: cropper.getCroppedCanvas(ops),
+      width: previewWidth,
+      height: previewHeight,
+      tileWidth: USERCHOICE.tileWidth,
+      tileHeight: USERCHOICE.tileHeight,
+      divX: previewWidth / USERCHOICE.tileWidth,
+      divY: previewHeight / USERCHOICE.tileHeight,
+      tileShape: 'rectangle',
+      // opacity: 1,
+    });
     photomosaic.tileCanvas();
-  } // end preview canvas
 
-  /**
-  * use Euclidian distance to find closest color
-  * @param {integer} red the numerical value of the red data in the pixel
-  * @param {integer} green the numerical value of the green data in the pixel
-  * @param {integer} blue the numerical value of the blue data in the pixel
-  * @param {object} palette the colors to be mapped to
-  * @returns {object} a dictionary of keys r,g,b values are integers
-  */
-  function mapColorToPalette(red, green, blue, palette) {
-      var diffR, diffG, diffB, diffDistance, mappedColor;
-      var distance = 25000;
-      palette.forEach((rgb) => {
-        diffR = (rgb.r - red);
-        diffG = (rgb.g - green);
-        diffB = (rgb.b - blue);
-        diffDistance = diffR * diffR + diffG * diffG + diffB * diffB;
-        if (diffDistance < distance) {
-            distance = diffDistance;
-            mappedColor = rgb;
-        };
-      });
-      return (mappedColor);
-  } // end map color
+  } // end preview canvas
 
   function displayPalette(palette){
     // palette - the array of rgb dict vals

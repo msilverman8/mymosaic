@@ -1,14 +1,15 @@
+//https://github.com/ritz078/photomosaic.js
 (function(window) {
 
     'use-strict';
 
     function PhotoMosaic(options) {
         console.log(' ~~ calling photo mosaic ~~');
-        // if (!options.image) {
-        //     throw new Error('image options is not passed');
-        // }
-        if (!options.imageData) {
-            throw new Error('imageData options is not passed');
+        if (!options.canvas) {
+            throw new Error('canvas options is not passed');
+        }
+        if (!options.palette) {
+            throw new Error('palette options is not passed');
         }
         if (!options.targetElement) {
             throw new Error('targetElement is not passed in options');
@@ -16,19 +17,7 @@
 
         this.options = this.extend(this.defaults, options);
 
-        // else if (this.options.image.complete) {
-        //     this.process();
-        // } else {
-        //     this.options.image.onload = this.process.bind(this);
-        // }
     }
-
-    // PhotoMosaic.prototype.process = function() {
-    //     this.options.divX = Math.floor(this.options.width / this.options.tileWidth);
-    //     this.options.divY = Math.floor(this.options.height / this.options.tileHeight);
-    //     var context = this.renderImage();
-    //     this.tileCanvas(context);
-    // };
 
     /**
      * Extends a Javascript Object
@@ -51,31 +40,16 @@
      */
     PhotoMosaic.prototype.defaults = {
         'imageData': null,
-        // 'image': null,
+        'palette': null,
+        'canvas': null,
+        'targetElement': null,
         'tileWidth': 5,
         'tileHeight': 5,
-        'targetElement': null,
         'tileShape': 'circle',
         'opacity': 1,
         'width': null,
         'height': null
     };
-
-    // /**
-    //  * Renders the image on a canvas before processing the pixels
-    //  * @return {object} Context of the canvas created
-    //  */
-    // PhotoMosaic.prototype.renderImage = function() {
-    //     var options = this.options;
-    //     var canvas = document.createElement('canvas');
-    //
-    //     canvas.width = options.tileWidth * options.divX;
-    //     canvas.height = options.tileHeight * options.divY;
-    //
-    //     var context = canvas.getContext('2d');
-    //     context.drawImage(options.image, 0, 0, canvas.width, canvas.height);
-    //     return context;
-    // };
 
     /**
      * Returns the average color of the canvas.
@@ -85,6 +59,7 @@
     PhotoMosaic.prototype.getAverageColor = function(data) {
         var i = -4,
             pixelInterval = 5,
+            // pixelInterval = this.options.tileWidth,
             count = 0,
             rgb = {
                 r: 0,
@@ -95,18 +70,46 @@
 
         while ((i += pixelInterval * 4) < length) {
             count++;
-            rgb.r += data[i];
-            rgb.g += data[i + 1];
-            rgb.b += data[i + 2];
+            rgb.r += data[i] * data[i];
+            rgb.g += data[i + 1] * data[i + 1];
+            rgb.b += data[i + 2] * data[i + 2];
+
         }
 
-        // floor the average values to give correct rgb values
-        rgb.r = Math.floor(rgb.r / count);
-        rgb.g = Math.floor(rgb.g / count);
-        rgb.b = Math.floor(rgb.b / count);
+        // Return the sqrt of the mean of squared R, G, and B sums
+        rgb.r = Math.floor(Math.sqrt(rgb.r / count));
+        rgb.g = Math.floor(Math.sqrt(rgb.g / count));
+        rgb.b = Math.floor(Math.sqrt(rgb.b / count));
 
-        return rgb;
+        // convert averaged color to closes allowed match
+        return this.mapColorToPalette(rgb.r, rgb.g, rgb.b);
+
+        // return rgb;
     };
+
+
+    /**
+    * use Euclidian distance to find closest color
+    * @param {integer} red the numerical value of the red data in the pixel
+    * @param {integer} green the numerical value of the green data in the pixel
+    * @param {integer} blue the numerical value of the blue data in the pixel
+    * @returns {object} a dictionary of keys r,g,b values are integers
+    */
+    PhotoMosaic.prototype.mapColorToPalette = function(red, green, blue)  {
+        var diffR, diffG, diffB, diffDistance, mappedColor;
+        var distance = 25000;
+        this.options.palette.forEach((rgb) => {
+          diffR = (rgb.r - red);
+          diffG = (rgb.g - green);
+          diffB = (rgb.b - blue);
+          diffDistance = diffR * diffR + diffG * diffG + diffB * diffB;
+          if (diffDistance < distance) {
+              distance = diffDistance;
+              mappedColor = rgb;
+          };
+        });
+        return (mappedColor);
+    } // end map color
 
     /**
      * Divides the whole canvas into smaller tiles and finds the average
@@ -116,69 +119,29 @@
      * @param context   Context of the canvas
      */
     PhotoMosaic.prototype.tileCanvas = function() {
-        var options = this.options;
+        var width = this.options.canvas.width;
+        var height = this.options.canvas.height;
+        var passedContext = this.options.canvas.getContext('2d');
+        var originalImageData = passedContext.getImageData(0, 0, this.options.canvas.width, this.options.canvas.height);
 
-        var processedCanvas = document.createElement('canvas');
-        var width = processedCanvas.width = options.width;
-        var height = processedCanvas.height = options.height;
-
-        var processedContext = processedCanvas.getContext('2d');
-
-        var originalImageData = options.imageData;
-
-        // for test
-              // processedContext.putImageData(originalImageData, 0, 0);
-        console.log(`amount across ${options.divY}`);
-        console.log(`amount down ${options.divX}`);
-        for (var i = 0; i <= options.divY; i++) {
-            for (var j = 0; j <= options.divX; j++) {
-                var x = j * options.tileWidth,
-                    y = i * options.tileHeight;
+        for (var i = 0; i < this.options.divY; i++) {
+            for (var j = 0; j < this.options.divX; j++) {
+                var x = j * this.options.tileWidth,
+                    y = i * this.options.tileHeight;
                 var imageData = this.getImageData(x, y, width, originalImageData);
                 var averageColor = this.getAverageColor(imageData);
                 var color = 'rgba(' + averageColor.r + ',' + averageColor.g + ',' + averageColor.b + ',' + this.options.opacity + ')';
-                processedContext.fillStyle = color;
-                // dev
-                let isStroked = (j % 32 == 0) || (i % 32 == 0);
-                this.createMosaic(x, y, processedContext, isStroked);
+                passedContext.fillStyle = color;
+                this.createMosaic(x, y, passedContext);
             }
+
         }
 
         // clear container
-        options.targetElement.innerHTML = '';
-        options.targetElement.appendChild(processedCanvas);
+        this.options.targetElement.innerHTML = '';
+        this.options.targetElement.appendChild(this.options.canvas);
     };
 
-    // /**
-    //  * Divides the whole canvas into smaller tiles and finds the average
-    //  * colour of each block. After calculating the average colour, it stores
-    //  * the data into an array.
-    //  *
-    //  * @param context   Context of the canvas
-    //  */
-    // PhotoMosaic.prototype.tileCanvas = function(context) {
-    //     var processedCanvas = document.createElement('canvas');
-    //     var width = processedCanvas.width = context.canvas.width;
-    //     processedCanvas.height = context.canvas.height;
-    //
-    //     var processedContext = processedCanvas.getContext('2d');
-    //     var options = this.options;
-    //
-    //     var originalImageData = context.getImageData(0, 0, context.canvas.width, context.canvas.height);
-    //
-    //     for (var i = 0; i < options.divY; i++) {
-    //         for (var j = 0; j < options.divX; j++) {
-    //             var x = j * options.tileWidth,
-    //                 y = i * options.tileHeight;
-    //             var imageData = this.getImageData(x, y, width, originalImageData);
-    //             var averageColor = this.getAverageColor(imageData);
-    //             var color = 'rgba(' + averageColor.r + ',' + averageColor.g + ',' + averageColor.b + ',' + this.options.opacity + ')';
-    //             processedContext.fillStyle = color;
-    //             this.createMosaic(x, y, processedContext);
-    //         }
-    //     }
-    //     this.options.targetElement.appendChild(processedCanvas);
-    // };
 
     /**
      * Creates an array of the image data of the tile from the data of whole image
@@ -215,7 +178,7 @@
      * @param  {object} context    Context of the result canvas
      * @return {}
      */
-    PhotoMosaic.prototype.createMosaic = function(x, y, context, isStroked) {
+    PhotoMosaic.prototype.createMosaic = function(x, y, context) {
 
         var tileWidth = this.options.tileWidth;
         var tileHeight = this.options.tileHeight;
@@ -232,16 +195,8 @@
             var height = tileHeight;
             var width = tileWidth;
             context.beginPath();
-            if(isStroked){
-              console.log(`stroking at coordinates [${x}, ${y}]`);
-              context.strokeStyle = '#000';
-              var stroked = context.strokeRect(x, y, width, height);
-              context.fill(stroked);
-            }
-            else {
-              context.rect(x, y, width, height);
-              context.fill();
-            }
+            context.rect(x, y, width, height);
+            context.fill();
             context.closePath();
         }
     };
