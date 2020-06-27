@@ -1,6 +1,11 @@
 from django.contrib import admin
-from .models import MosaicImage
+from .models import Mosaic, MosaicOrder, Order
 
 
-# Register your models here.
-admin.site.register(MosaicImage)
+class MosaicAdmin(admin.ModelAdmin):
+    readonly_fields = ('id', 'color', 'plates', 'mosaic', 'materials')
+
+
+admin.site.register(Mosaic, MosaicAdmin)
+admin.site.register(MosaicOrder)
+admin.site.register(Order)

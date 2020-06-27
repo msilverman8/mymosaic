@@ -9,6 +9,9 @@ verify_ssl = true
 django = "*"
 django-model-utils = "*"
 django-pandas = "*"
+psycopg2 = "*"
+django-allauth = "*"
+djangorestframework = "*"
 
 [requires]
 python_version = "3.8"

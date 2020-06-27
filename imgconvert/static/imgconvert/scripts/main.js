@@ -5,6 +5,7 @@ window.onload = function () {
   // MAIN GLOBALS
   var USERCHOICE = {
         color: 'CL', // one of ['CL', 'GR', 'BW']
+        palette: [],
         basePlate: 32,
         x: 64,
         y: 64,
@@ -14,7 +15,7 @@ window.onload = function () {
         // get isSquare(){return this.x == this.y},
       },
       // values are { userColor : [ {r,g,b}, ] }
-      PALETTE = null;
+      COLORDATA = null;
 
 
   // cropper variables
@@ -33,11 +34,12 @@ window.onload = function () {
         ready: function (e) {
           console.log(e.type);
           // there should be a better way to do this, but for now
-          if(PALETTE === null){
+          if(COLORDATA === null){
             getColorList();
           }else{
-            canvasPreview(PALETTE[USERCHOICE.color]);
+            canvasPreview();
           }
+          saveMosaic.disabled = false;
         },
         // preview: containerResult,
         viewMode: 2,
@@ -50,10 +52,10 @@ window.onload = function () {
         cropend: function (e) {
           console.log(e.type, e.detail.action);
           // there should be a better way to do this, but for now
-          if(PALETTE === null){
+          if(COLORDATA === null){
             getColorList();
           }else{
-            canvasPreview(PALETTE[USERCHOICE.color]);
+            canvasPreview();
           }
         },
         crop: function (e) {
@@ -72,40 +74,83 @@ window.onload = function () {
       uploadedImageURL,
       previewSize;
 
+  var saveMosaic = document.getElementById('save');
+  saveMosaic.onclick = function(){
+    if(!USERCHOICE.hasOwnProperty('mosaic') || !USERCHOICE.hasOwnProperty('materials')){
+      throw new Error('no mosaic data was saved');
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    let headers = {
+      'X-CSRFToken': csrftoken,
+      'Accept': 'application/json, text/plain, */*',
+      'Content-Type': 'application/json'
+    }
+
+    saveMosaic.disabled = true;
+    fetch("setColorData/", {
+        method: 'POST',
+        body: JSON.stringify({
+          color: USERCHOICE.color,
+          mosaic: USERCHOICE.mosaic,
+          materials: USERCHOICE.materials,
+          plates: (USERCHOICE.x / USERCHOICE.basePlate) + (USERCHOICE.y / USERCHOICE.basePlate)
+        }),
+        headers: headers,
+        // credentials: 'same-origin',
+    })
+    .then(
+      function(response) {
+        if (response.status < 200 || response.status > 200) {
+          console.log('save mosaic to server not ok. Status code: ' + response.status);
+          saveMosaic.disabled = false;
+          return
+        }
+        response.json().then(function(resp) {
+          console.log('save mosaic came back ok: ' + resp);
+          saveMosaic.disabled = false;
+        })
+      }
+    )
+    .catch(function(err) {
+      console.log('save mosaic data Error: ', err);
+      saveMosaic.disabled = false;
+    });
+  }
   // makes a call to the server to get the allowed colors for conversion
   async function getColorList(){
     console.log(' --!! getting color list !!--');
     // get color choices from the server
-    // should return { userChoice : [ {rgb}, ]  }
-    fetch('getColorList/')
+    // should return { colorChoice : [ {rgb}, ] }, names : {name : {rgb}}  }
+    fetch('getColorData/')
     .then(
       function(response) {
         if (response.status !== 200) {
-          console.log('response not OK. Status Code: ' + response.status);
-          PALETTE = null;
-          return;
+          console.log('get color data response not 200. Status Code: ' + response.status);
+          COLORDATA = null;
+          return
         }
         // status OK
         response.json().then(function(data) {
           console.log(`using color choice ${USERCHOICE.color}`);
-          canvasPreview(data[USERCHOICE.color]);
-          PALETTE = data;
+          COLORDATA = data;
+          USERCHOICE.palette = COLORDATA[USERCHOICE.color];
+          canvasPreview();
           // for dev
-          displayPalette(data[USERCHOICE.color]);
+          displayPalette();
         });
       }
     )
     .catch(function(err) {
-      console.log('Fetch Error: ', err);
-      PALETTE = null;
+      console.log('get color data Error: ', err);
+      COLORDATA = null;
     });
   } // end get color list
 
   /**
   *  get a canvas object from the cropper plugin and send it thru PhotoMosaic
-  * @param {Object} palette contains the colors allowed
   */
-  function canvasPreview(palette){
+  function canvasPreview(){
     console.log(' ---  canvas preview --- ');
     const previewWidth = USERCHOICE.x * USERCHOICE.tileWidth;
     const previewHeight = USERCHOICE.y * USERCHOICE.tileHeight;
@@ -124,33 +169,31 @@ window.onload = function () {
       // imageSmoothingQuality: 'high',
     };
 
-
     // call PhotoMosaic to tile the image
-    let photomosaic = new PhotoMosaic({
-      // imageData: imageData,
+    let convertPhoto = new ConvertPhoto({
+      colorChoice: USERCHOICE.color,
+      palette: USERCHOICE.palette,
+      colorNames: COLORDATA.names,
       targetElement: containerResult,
-      palette: palette,
       canvas: cropper.getCroppedCanvas(ops),
-      width: previewWidth,
-      height: previewHeight,
       tileWidth: USERCHOICE.tileWidth,
       tileHeight: USERCHOICE.tileHeight,
-      divX: previewWidth / USERCHOICE.tileWidth,
-      divY: previewHeight / USERCHOICE.tileHeight,
-      tileShape: 'rectangle',
+      tilesX: USERCHOICE.x,
+      tilesY: USERCHOICE.y,
       // opacity: 1,
     });
-    photomosaic.tileCanvas();
+    convertPhoto.tileCanvas();
+    USERCHOICE.materials = convertPhoto.getBillOfMaterials();
+    USERCHOICE.mosaic = convertPhoto.mosaicRGBAStrings;
 
   } // end preview canvas
 
-  function displayPalette(palette){
-    // palette - the array of rgb dict vals
+  function displayPalette(){
     // easy visual for development
     // display colors for mosaic
     let cls = 'sample-colors';
     let spanContainer = document.getElementById('paletteContainer');
-    palette.forEach((val) => {
+    USERCHOICE.palette.forEach((val) => {
       let span = document.createElement('span');
       span.classList.add(cls);
       span.style.backgroundColor = 'rgba('+ val.r +', '+ val.g +', '+val.b+')';
@@ -198,4 +241,22 @@ window.onload = function () {
     importImage.disabled = true;
     importImage.parentNode.className += ' disabled';
   }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
 };

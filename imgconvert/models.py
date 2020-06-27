@@ -1,38 +1,76 @@
 from django.db import models
+from django.conf import settings
+from django.shortcuts import reverse
+from django.contrib.postgres.fields import JSONField, ArrayField
 from model_utils import Choices
 from django.utils.translation import gettext_lazy as _
-#from django.contrib.postgres.fields import JSONField, ArrayField
-#from django.core.validators import MaxValueValidator
 
 
-class MosaicImage(models.Model):
+class Mosaic(models.Model):
     """
-    color: the selected color palette
-    values: the bill of materials
-    dimensions: (width, height) used to order the values
-    id: using the default id value as the order number for now
+    A table storing individual mosaics
     """
-    COLOR = Choices(('CL', _('color')), ('GR', _('greyscale')), ('BW', _('black & white')))
+    COLOR = Choices(('CL', _('color')), ('GR', _('grayscale')), ('BW', _('black & white')))
     color = models.CharField(choices=COLOR, default=COLOR.CL, max_length=2)
-    # [[0,0,0,0], [0,0,0,0], (...)]
-    #values = ArrayField(ArrayField(models.PositiveSmallIntegerField(validators=[MaxValueValidator(250)])))
-    # [32, 32] or [64,64] or [96,64]
-    # maybe this field type could be some kind of choice? needs more constraint
-    #dimensions = ArrayField(models.PositiveSmallIntegerField())
+    plates = models.IntegerField()
+    mosaic = ArrayField(ArrayField(models.CharField(max_length=24)))
+    materials = JSONField()
 
-    # does this need to be able to return a dict of the amount of each color
-    # def get_materials return {red: 200, blue: 200, green: 200, (...)}
-
-    # is this the way to get a user to the instruction page
-    # def get_absolute_url(self):
-    #     """Returns the url to access a particular instance of the model."""
-    #     return reverse('model-detail-view', args=[str(self.id)])
-
-    def __unicode__(self):
+    def __str__(self):
         """ readable name for python object """
-        return f'order #{self.id} a {self.color} mosaic'
+        return f'A {self.COLOR[self.color]} mosaic with {self.plates} plates'
+
+    def get_price(self):
+        """
+        the price is calculated based on # of plates??????????
+        """
+        price = 50.00
+        return price
+
+    def get_absolute_url(self):
+        return reverse("imgconvert:instructions", kwargs={
+            "pk": self.pk
+        })
+
+    def get_add_to_cart_url(self):
+        return reverse("imgconvert:add-to-cart", kwargs={
+            "pk": self.pk
+        })
+
+    def get_remove_from_cart_url(self):
+        return reverse("imgconvert:remove-from-cart", kwargs={
+             "pk": self.pk
+        })
 
 
-# class User(models.Model):
-#     username = models.CharField(max_length=30)
-#     mosaic = models.ForeignKey()
+class MosaicOrder(models.Model):
+    """
+    Storing the state of a users order (shopping cart)
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    ordered = models.BooleanField(default=False)
+    mosaic = models.ForeignKey(Mosaic, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1)
+
+    def __str__(self):
+        return f'{self.quantity} of mosaics'
+
+    def get_total_mosaic_price(self):
+        return self.quantity * self.mosaic.get_price()
+
+
+class Order(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    mosaics = models.ManyToManyField(MosaicOrder)
+    start_date = models.DateTimeField(auto_now_add=True)
+    ordered_date = models.DateTimeField()
+    ordered = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.user.username
+
+    def get_total_price(self):
+        total = 0
+        for mosaic_order in self.mosaics.all():
+            total += mosaic_order.get_total_mosaic_price()
+        return total

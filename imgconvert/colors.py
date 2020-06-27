@@ -70,7 +70,7 @@ class BrickMosaic:
             'CL': 'is_topcolors',
             'GR': 'is_greyscale',
             'BW': 'is_blackwhite',
-            'ALL': 'is_all',
+            'AL': 'is_all',
         }
         df = self.load_color_df()
         if choices[choice] == 'is_all':
@@ -87,6 +87,19 @@ class BrickMosaic:
                 'g': rgb[1],
                 'b': rgb[2]
             })
+
+        return data
+
+    def get_name_to_color(self):
+        """
+        returns a { string name : list rgb value dict }
+        """
+        df = self.load_color_df()
+        index = df.to_dict('index')
+
+        data = {}
+        for vals in index.values():
+            data[vals['name']] = vals['RGB']
 
         return data
 
