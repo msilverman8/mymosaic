@@ -193,7 +193,7 @@
     }
 
     createOverlay(){
-      console.log('updating overlay');
+      // console.log('updating overlay');
       let canvas = this.options.overlayCanvas;
       let ctx = canvas.getContext('2d');
       ctx.clearRect(0,0,canvas.width, canvas.height);
@@ -216,7 +216,7 @@
       const validated = this.setHighlightBounds(width, height);
       // return values to dom to have display updated
       if(validated.isInvalid){return validated}
-      console.log(` highlight section is a :${width}: x :${height}: box`);
+      // console.log(` highlight section is a :${width}: x :${height}: box`);
       // new bounds are valid, update highlight object
       // store actual form value, highlight display may be differnt
       this.highlight.w = this.highlight.widthActual = validated.w;
@@ -226,10 +226,10 @@
       this.createOverlay();
     }
     moveHighlight(direction){
-      console.log(`updating highlight section to -- ${direction} --`);
+      // console.log(`updating highlight section to -- ${direction} --`);
       // gets the new bounds
       const nw = this.getmoveHighlight(direction);
-      console.log('new highlight');
+      // console.log('new highlight');
       for (var variable in nw) {
         if (nw.hasOwnProperty(variable)) {
           console.log(`${variable}: ${nw[variable]}`);
@@ -241,9 +241,9 @@
       this.createOverlay()
     }
     setHighlightBounds(width, height){
-      console.log('previous bounds');
-      console.log(`${this.highlight.x}, ${this.highlight.y}, ${this.highlight.w}, ${this.highlight.h}`);
-      console.log(`setting to w: ${width}, h: ${height}`);
+      // console.log('previous bounds');
+      // console.log(`${this.highlight.x}, ${this.highlight.y}, ${this.highlight.w}, ${this.highlight.h}`);
+      // console.log(`setting to w: ${width}, h: ${height}`);
       [width, height].forEach((x) => {
         if(isNaN(Number(x))){
           throw new Error('new highlight bounds value is not a number!');
@@ -269,11 +269,14 @@
 
       // get current highlight origin
       const current = {
-        x: this.highlight.x,
-        y: this.highlight.y
-      };
-      const width = this.highlight.widthActual;
-      const height = this.highlight.heightActual;
+              x: this.highlight.x,
+              y: this.highlight.y,
+              h: this.highlight.h,
+            },
+            width = this.highlight.widthActual,
+            height = this.highlight.heightActual,
+            maxW = this.options.tilesX,
+            maxH = this.options.tilesY;
 
       // create destination placeholder obj
       var destination = {
@@ -281,32 +284,28 @@
             y: 0,
             w: width,
             h: height
-          },
-          maxW = this.options.tilesX - 1,
-          maxH = this.options.tilesY - 1;
-
-      const atBottomRight = ((current.x + width) > maxW) && ((current.y + height) > maxH);
-      if(atBottomRight){console.log('!!! at bottom right');}
+      };
 
       if(direction == 'next'){
-        console.log('direction is next');
+        // console.log('direction is next');
         // deal with wraps
-        if (atBottomRight){return destination;}
+        // if at bottom wrap, wrap to 0,0 which is default destination
+        if ( ((current.x + width) >= maxW) && ((current.y + height) >= maxH) ){return destination;}
         // the last segment in a row
-        if((current.x + width) > maxW){
-          console.log(" new x coord is out of bounds");
+        if((current.x + width) >= maxW){
+          // console.log(" new x coord is out of bounds");
           // x & width stay get y
           destination.y = current.y + height;
           // incase there is not full height left
           destination.h = Math.min(height, (maxH - destination.y));
           return destination;
         }
-        console.log('new x coord is in bounds');
+        // console.log('new x coord is in bounds');
         // no wrap keep y the same as current
         destination.y = current.y;
         destination.x = current.x + width;
         destination.h = Math.min(height, (maxH - destination.y));
-        destination.w = Math.min(width, (maxW - destination.w));
+        destination.w = Math.min(width, (maxW - destination.x));
         return destination;
       }
       else {
@@ -317,11 +316,19 @@
         // get previous
         // deal with wraps
         // if at head of a row, wrap to end of previous row
-        if(origin.x == 0){
+        if(current.x == 0){
+          // console.log('------------------------------------------');
+          // console.log('highlight is at the front of a row ');
+          // console.log(`LEFTOVER width ${leftover.w} is falsy?? ${!(leftover.w)}`);
+          // console.log(`WIDTH is ${width}`);
           destination.w = leftover.w || width;
           destination.x = maxW - destination.w;
           // if at top of the mosaic, wrap to end of canvas
-          if(origin.y == 0){
+          if(current.y == 0){
+            // console.log('---------------------------------------------');
+            // console.log(' highlight is at the top of the container! move it to the bottom!');
+            // console.log(`LEFTOVER height ${leftover.h} is falsy?? ${!(leftover.h)}`);
+            // console.log(`HEIGHT is ${height}`);
             destination.h = leftover.h || height;
             destination.y = maxH - destination.h;
             return destination;
@@ -333,11 +340,11 @@
           destination.h = Math.min(current.y, height);
           return destination;
         }
-
+        // console.log('highlight is in the middle of the canvas');
         destination.x = Math.max(0, (current.x - width));
         destination.y = current.y;
-        destination.w = Math.min(width, (current.x - destination.w));
-        destination.h = Math.min(height, (maxH - current.y));
+        destination.w = Math.min(current.x, width);
+        destination.h = current.h;
         return destination;
 
       }
@@ -348,19 +355,6 @@
 
 
 window.MakeMosaic = MakeMosaic;
-
-// tileCount = {key: 'rgba(0,0,0,1)'},
-// plate = {},
-// plate.count = 1,
-// plate.current = {x: 0, y: 0},
-// highlight = {},
-// highlight.x = 0,
-// highlight.y = 0,
-// highlight.width = 0,
-// highlight.height = 0,
-// highlight.origin = {x: 0, y: 0},
-// highlight.bounds = {x: 0, y: 0, width: 0, height: 0},
-
 
 
 /*
@@ -385,50 +379,9 @@ listen for change to next / prev plate
 update current plate
 update mosaic display
 
-listen for highlight view value change
-  on change if 0 use current value still
-  on blur if still 0 update value box with current value
-update highlight bounds
-  get highlight origin / bounds / x y
-  get input value - width / height
-  set highlight to x y width height
-update tile count display
-  get passed rgba json object
-  rgba get y index(es) highlight y * height return new array
-  for loop thru y
-    for loop thru index = y[x] index < width
-      push color to arry
-  get bill of materials with color arry
-update highlight display
-  fill canvas with solid color
-  cear rect with stroke of highlight x y width height
 
-listen for next / prev highlight sections
-update current highlight bounds
-update highlight display
 
-new x coord = current x - width
-if new x coord < 0
-  if current x coord == 0
-    new x coord = if leftover ? cw - leftover : cw - width
-    new width = if leftover ? leftover : width
-    wrap = true
-  else
-    new x coord = 0
-if wrap
-  new y coord = current y - height
-  if new y coord < 0
-    if current y coord == 0
-      new y coord = if leftover ? ch - leftover : ch - height
-      new height = if leftover ? leftover : height
-    else
-      new y coord = 0
-      new height = current y coord
-  return new vals
-else
-  new y coord = current y
 
-if wrap
 
 
 
