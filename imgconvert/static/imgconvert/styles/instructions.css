@@ -1,0 +1,8 @@
+#canvasContainer {
+  position: relative;
+}
+#overlayCanvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+}

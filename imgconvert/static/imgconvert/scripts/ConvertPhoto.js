@@ -1,7 +1,7 @@
 //https://github.com/ritz078/photomosaic.js
 (function(window) {'use-strict';
 
-    class ConvertPhoto extends MakeMosaic {
+    class ConvertPhoto {
       constructor(options){
         console.log(' - calling convert - ');
         if (!options.canvas) {
@@ -10,18 +10,21 @@
         if (!options.palette) {
           throw new Error('palette options not passed!');
         }
-        super(options)
-        this.defaults = {
+        let defaults = {
             colorChoice: 'CL',
-            grayType: 'avg',
+            grayType: 'lum',
             palette: null,
             canvas: null,
             targetElement: null,
             tileWidth: 5,
             tileHeight: 5,
+            tilesX: 64,
+            tilesY: 64,
             opacity: 1,
         };
-        this.options = super.assign(this.defaults, options);
+        this.options = Object.assign(defaults, options);
+        // super(Object.assign(defaults, options))
+
         this.utils = {
           // human perception of color gives weight to the importance of each channel
           weight: {
@@ -108,6 +111,8 @@
             rgb.r = Math.floor(rgb.r / count);
             rgb.g = Math.floor(rgb.g / count);
             rgb.b = Math.floor(rgb.b / count);
+
+            console.log(rgb.r);
             break;
 
         }
@@ -177,9 +182,8 @@
             this.mosaicTileCount[i].push('(' + commaSeparated + ')');
             this.mosaicRGBAStrings[i].push(color);
             mosaicContext.fillStyle = color;
-            super.createTiles(x, y, mosaicContext);
-            // passedContext.fillStyle = color;
-            // super.createTiles(x, y, passedContext);
+            mosaicContext.fillRect(x, y, this.options.tileWidth, this.options.tileHeight);
+            // super.createTiles(x, y, mosaicContext);
           }
         }
 

@@ -13,7 +13,7 @@ class Mosaic(models.Model):
     COLOR = Choices(('CL', _('color')), ('GR', _('grayscale')), ('BW', _('black & white')))
     color = models.CharField(choices=COLOR, default=COLOR.CL, max_length=2)
     plates = models.IntegerField()
-    mosaic = ArrayField(ArrayField(models.CharField(max_length=24)))
+    mosaic = JSONField()
     materials = JSONField()
 
     def __str__(self):

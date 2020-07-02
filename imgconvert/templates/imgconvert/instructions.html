@@ -1,10 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Instructions</title>
-</head>
-<body>
-<h1> Instructions </h1>
-</body>
-</html>
+{% extends 'imgconvert/base.html' %}
+{% load static %}
+  {% block title %}Instructions{% endblock title %}
+  {% block extra_head %}
+    <link rel="stylesheet" href="{% static 'imgconvert/styles/instructions.css' %}">
+    {{ mosaic|json_script:"rgbaStringList" }}
+    {{ plates|json_script:"plates" }}
+  {% endblock extra_head %}
+
+
+  {% block content %}
+  <div class="container">
+    <div class="row">
+      <h1 class="col-md-6">Instructions</h1>
+    </div>
+    <div id="tilesListContainer" class="row">
+    </div>
+    <div class="row">
+      <!-- canvas -->
+      <div id="canvasContainer" class="col ml-3 p-0">
+        <canvas id="mosaicCanvas" class=""></canvas>
+        <canvas id="overlayCanvas"></canvas>
+      </div>
+      <!-- end canvas -->
+      <!-- highlight bounds values -->
+      <div id="inputControls" class="col-md-3">
+        <div id="plateControls" class="row">
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <span class="input-group-text"># of plates in view</span>
+            </div>
+            <input type="text" class="form-control" value="{{ plates }}" data-key="plates">
+            <div class="invalid-feedback">Please enter a number.</div>
+          </div>
+          <button id="updatePlates" type="button" class="btn btn-primary" data-method="updatePlates">change display</button>
+        </div>
+        <div id="highlightControls" class="row mt-3">
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <span class="input-group-text"># of tiles across</span>
+            </div>
+            <input type="text" class="form-control" data-key="width" value="5">
+            <div class="invalid-feedback">Please enter a number.</div>
+          </div>
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <span class="input-group-text"># of tiles stacked</span>
+            </div>
+            <input type="text" class="form-control" data-key="height" value="1">
+            <div class="invalid-feedback">Please enter a number.</div>
+          </div>
+          <button id="updateHighlight" type="button" class="btn btn-primary" data-method="updateHighlight">change block size</button>
+        </div>
+      </div>
+      <!-- end highlight -->
+    </div>
+    <div id="instructionControls" class="row">
+      <div class="col-sm-1">
+        <button type="button" class="btn btn-primary direction" data-direction="previous">prev</button>
+      </div>
+      <div class="col-sm-1">
+        <button type="button" class="btn btn-primary direction" data-direction="next">next</button>
+      </div>
+    </div>
+  </div>
+  {% endblock content %}
+
+  {% block extra_script %}
+    <script type="text/javascript" src="{% static 'imgconvert/scripts/MakeMosaic.js' %}"></script>
+    <script type="text/javascript" src="{% static 'imgconvert/scripts/instructions.js' %}"></script>
+  {% endblock extra_script %}

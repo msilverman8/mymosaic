@@ -1,6 +1,4 @@
-window.onload = function () {
-  console.log('main js loaded');
-  'use strict';
+window.onload = function () {'use strict';
 
   // MAIN GLOBALS
   var USERCHOICE = {
@@ -173,15 +171,15 @@ window.onload = function () {
     let convertPhoto = new ConvertPhoto({
       colorChoice: USERCHOICE.color,
       palette: USERCHOICE.palette,
-      colorNames: COLORDATA.names,
+      // colorNames: COLORDATA.names,
       targetElement: containerResult,
       canvas: cropper.getCroppedCanvas(ops),
       tileWidth: USERCHOICE.tileWidth,
       tileHeight: USERCHOICE.tileHeight,
       tilesX: USERCHOICE.x,
       tilesY: USERCHOICE.y,
-      // opacity: 1,
     });
+
     convertPhoto.tileCanvas();
     USERCHOICE.materials = convertPhoto.getBillOfMaterials();
     USERCHOICE.mosaic = convertPhoto.mosaicRGBAStrings;
