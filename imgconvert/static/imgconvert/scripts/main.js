@@ -2,7 +2,7 @@ window.onload = function () {'use strict';
 
   // MAIN GLOBALS
   var USERCHOICE = {
-        color: 'CL', // one of ['CL', 'GR', 'BW']
+        color: 'GR', // one of ['CL', 'GR', 'BW']
         palette: [],
         basePlate: 32,
         x: 64,

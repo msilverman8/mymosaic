@@ -112,7 +112,6 @@
             rgb.g = Math.floor(rgb.g / count);
             rgb.b = Math.floor(rgb.b / count);
 
-            console.log(rgb.r);
             break;
 
         }

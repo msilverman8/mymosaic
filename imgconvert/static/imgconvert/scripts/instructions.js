@@ -1,6 +1,6 @@
 window.onload = function(){'use strict';
   const jsonValues = ['rgbaStringList', 'plates'];
-  const thisMosaic = {};
+  var thisMosaic = {};
   jsonValues.forEach(val => {
     thisMosaic[val] = JSON.parse(document.getElementById(val).textContent);
   });
@@ -15,7 +15,6 @@ window.onload = function(){'use strict';
 
 
   let makeMosaic = new MakeMosaic(options);
-  makeMosaic.displayMosaic();
 
   document.getElementById('instructionControls').onclick = function(event) {
     // this works for now but design may change how this works keep this in mind
@@ -54,7 +53,16 @@ window.onload = function(){'use strict';
     if(isInvalid){return}
 
     if(method == 'updateHighlight'){
-      makeMosaic.updateHighlight(newValue.width, newValue.height);
+      const checkValidation = makeMosaic.updateHighlight(newValue.width, newValue.height);
+      // if an invalid value is passed, the highlight will automatically be set to full display width or height
+      // it returns an object with property isInvalid set to true if this is the case
+      // update the DOM to reflect the auto set of this value
+      if(checkValidation.isInvalid){
+        console.log(' update highlight returned with invalid warning, update dom to reflect auto set to defaulted value ');
+        console.log(checkValidation);
+        target.parentElement.querySelector('input[data-key="height"]').value = checkValidation.h;
+        target.parentElement.querySelector('input[data-key="width"]').value = checkValidation.w;
+      }
     }
 
 
