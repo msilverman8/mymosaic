@@ -4,7 +4,7 @@
   {% block extra_head %}
   <!-- third party styles -->
   <!-- <link  href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.7/cropper.css" rel="stylesheet"> -->
-  <link rel="stylesheet" href="{% static 'imgconvert/styles/img_tag_cropper_demo.css' %}">
+  <link rel="stylesheet" href="{% static 'build/vendor/cropper.min.css' %}">
   <!-- local styles -->
   <link rel="stylesheet" href="{% static 'imgconvert/styles/main.css' %}">
   {% endblock extra_head %}
@@ -44,9 +44,8 @@
 
 {% block extra_script %}
   <!-- 3rd party scripts -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.7/cropper.js"></script> -->
-  <script type="text/javascript" src="{% static 'imgconvert/scripts/img_tag_cropper_demo_cropper.js' %}"></script>
+
   <!-- local scripts -->
-  <script type="text/javascript" src="{% static 'imgconvert/scripts/ConvertPhoto.js' %}"></script>
-  <script type="text/javascript" src="{% static 'imgconvert/scripts/main.js' %}"></script>
+  <script type="text/javascript" src="{% static 'build/scripts/bundle.js' %}"></script>
+
 {% endblock extra_script %}

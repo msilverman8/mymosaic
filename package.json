@@ -1,0 +1,54 @@
+{
+  "name": "mymosaic",
+  "version": "1.0.0",
+  "description": "mosaic-ify an image!",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msilverman8/mymosaic.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/msilverman8/mymosaic/issues"
+  },
+  "homepage": "https://github.com/msilverman8/mymosaic#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.10.5",
+    "@babel/core": "^7.10.5",
+    "@babel/plugin-transform-runtime": "^7.10.5",
+    "@babel/preset-env": "^7.10.4",
+    "autoprefixer": "^9.8.5",
+    "babelify": "^10.0.0",
+    "browser-sync": "^2.26.10",
+    "browserify": "^16.5.1",
+    "del": "^5.1.0",
+    "envify": "^4.1.0",
+    "exorcist": "^1.0.1",
+    "gulp": "^4.0.2",
+    "gulp-cli": "^2.3.0",
+    "gulp-rename": "^2.0.0",
+    "gulp-sourcemaps": "^2.6.5",
+    "gulp-uglify": "^3.0.2",
+    "vinyl-buffer": "^1.0.1",
+    "vinyl-source-stream": "^2.0.0",
+    "watchify": "^3.11.1"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.10.5",
+    "cropperjs": "^1.5.7",
+    "ditherjs": "^0.10.0",
+    "face-api.js": "^0.22.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env"
+    ],
+    "plugins": [
+      "@babel/plugin-transform-runtime"
+    ]
+  }
+}

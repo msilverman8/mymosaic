@@ -1,8 +1,12 @@
-window.onload = function () {'use strict';
+// window.onload = function () {
+  'use strict';
+  // imports
+  import Cropper from 'cropperjs';
+  import ConvertPhoto from './ConvertPhoto.js';
 
   // MAIN GLOBALS
   var USERCHOICE = {
-        color: 'GR', // one of ['CL', 'GR', 'BW']
+        color: 'CL', // one of ['CL', 'GR', 'BW']
         palette: [],
         basePlate: 32,
         x: 64,
@@ -17,8 +21,9 @@ window.onload = function () {'use strict';
 
 
   // cropper variables
-  var Cropper = window.Cropper,
-      URL = window.URL || window.webkitURL,
+  // var Cropper = window.Cropper,
+  // var Cropper = require('cropperjs');
+  var URL = window.URL || window.webkitURL,
       // active crop container / image
       containerMain = document.getElementById('containerUploaded'),
       image = document.getElementById('imgUploaded'),
@@ -257,4 +262,4 @@ window.onload = function () {'use strict';
 }
 
 
-};
+// };

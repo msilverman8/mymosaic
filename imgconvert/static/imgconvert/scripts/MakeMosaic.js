@@ -1,5 +1,8 @@
-(function(window){
-  'use-strict';
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global = global || self, global.MakeMosaic = factory());
+}(this, (function () { 'use strict';
 
   class MakeMosaic {
     constructor(options){
@@ -413,44 +416,6 @@
 
   } // end class MakeMosaic
 
+ return MakeMosaic;
 
-
-window.MakeMosaic = MakeMosaic;
-
-
-/*
-
-display mosaic based on default view controls
-  display mosaic thumbnail????
-  display whole mosaic with a get started button that has instructions on controls
-
-display tile count for highlight
-
-display plate count value
-display prev - next plate controls
-
-display highlight bounds value
-display prev - next controls
-
-
-listen for change plate view control value
-update plate view value
-update mosaic display
-listen for change to next / prev plate
-update current plate
-update mosaic display
-
-
-
-
-
-
-
-
-
-
- */
-
-
-
-})(window)
+})));

@@ -4,6 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+setuptools = "*"
 
 [packages]
 django = "*"
@@ -12,6 +13,8 @@ django-pandas = "*"
 psycopg2 = "*"
 django-allauth = "*"
 djangorestframework = "*"
+django-compressor = "*"
+django-compressor-toolkit = "*"
 
 [requires]
 python_version = "3.8"

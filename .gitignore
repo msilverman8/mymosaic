@@ -3,3 +3,5 @@ __pycache__
 .idea
 imgconvert/static/imgconvert/scripts/photomosaicold.js
 imgconvert/static/imgconvert/scripts/MosaicDisplayold.js
+node_modules
+/cssgulpfile.js

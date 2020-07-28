@@ -1,5 +1,8 @@
-//https://github.com/ritz078/photomosaic.js
-(function(window) {'use-strict';
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global = global || self, global.ConvertPhoto = factory());
+}(this, (function () { 'use strict';
 
     class ConvertPhoto {
       constructor(options){
@@ -245,6 +248,6 @@
     } // end class ConvertPhoto
 
 
+    return ConvertPhoto;
 
-    window.ConvertPhoto = ConvertPhoto;
-}(window));
+   })));
