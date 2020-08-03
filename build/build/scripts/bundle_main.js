@@ -3,6 +3,218 @@
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
+var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
+
+var _asyncToGenerator2 = _interopRequireDefault(require("@babel/runtime/helpers/asyncToGenerator"));
+
+var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/classCallCheck"));
+
+var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
+
+var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
+
+// detects the faces an image and returns the bounding box including all faces
+(function (global, factory) {
+  (typeof exports === "undefined" ? "undefined" : (0, _typeof2["default"])(exports)) === 'object' && typeof module !== 'undefined' ? module.exports = factory() : typeof define === 'function' && define.amd ? define(factory) : (global = global || self, global.AutoFace = factory());
+})(void 0, function () {
+  'use strict';
+
+  var DEFAUTLS = {
+    image: null,
+    aspectRatio: 1
+  };
+
+  var AutoFace = /*#__PURE__*/function () {
+    function AutoFace(options) {
+      (0, _classCallCheck2["default"])(this, AutoFace);
+
+      if (!options.image) {
+        throw new Error("image not passed with call to find face!");
+      }
+
+      this.options = Object.assign({}, DEFAUTLS, options); // get the display dimensions of the image to get accurate face bounds
+
+      var ic = this.options.image.parentElement;
+      this.displaySize = {
+        width: ic.clientWidth,
+        height: ic.clientHeight
+      };
+      console.table(this.displaySize); // detect faces and get face detection object
+
+      this.results = this._init()["catch"](function (e) {
+        console.warn(e);
+      });
+    }
+
+    (0, _createClass2["default"])(AutoFace, [{
+      key: "_init",
+      value: function () {
+        var _init2 = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee() {
+          var faceapi, url, detections, resizedDetections, faceBounds;
+          return _regenerator["default"].wrap(function _callee$(_context) {
+            while (1) {
+              switch (_context.prev = _context.next) {
+                case 0:
+                  console.log('initializing face bounds');
+                  faceapi = window.faceapi; // load the model for face-api
+
+                  if (faceapi.nets.tinyFaceDetector.isLoaded) {
+                    _context.next = 6;
+                    break;
+                  }
+
+                  url = 'static/build/manualAdds/';
+                  _context.next = 6;
+                  return faceapi.nets.tinyFaceDetector.loadFromUri(url);
+
+                case 6:
+                  _context.next = 8;
+                  return faceapi.detectAllFaces(this.options.image, new faceapi.TinyFaceDetectorOptions());
+
+                case 8:
+                  detections = _context.sent;
+                  // resize the detected boxes in case your displayed image has a different size than the original
+                  resizedDetections = faceapi.resizeResults(detections, this.displaySize); // get the face bounds
+
+                  faceBounds = this._getFaceArea(resizedDetections); // get the crop bounds
+
+                  return _context.abrupt("return", this._getAutoCropBounds(faceBounds));
+
+                case 12:
+                case "end":
+                  return _context.stop();
+              }
+            }
+          }, _callee, this);
+        }));
+
+        function _init() {
+          return _init2.apply(this, arguments);
+        }
+
+        return _init;
+      }() // end init
+
+    }, {
+      key: "_getFaceArea",
+      value: function _getFaceArea(resizedDetections) {
+        // get the data for cropper
+        console.log('init.2 - getting the face area');
+        var x = this.displaySize.width;
+        var y = this.displaySize.height;
+        var bounds = {
+          x: x,
+          y: y,
+          x_max: 0,
+          y_max: 0,
+
+          get w() {
+            return this.x_max - this.x;
+          },
+
+          get h() {
+            return this.y_max - this.y;
+          }
+
+        };
+
+        if (resizedDetections.length) {
+          for (var i = 0; i < resizedDetections.length; i++) {
+            // the docs don't have anything on just returning the location?
+            // maybe look into that method that returns a canvas of the face????
+            var face = resizedDetections[i]._box;
+            var _x = face._x;
+            var _y = face._y;
+            var x_max = _x + face._width;
+            var y_max = _y + face._height;
+            bounds.x = Math.min(bounds.x, _x);
+            bounds.y = Math.min(bounds.y, _y);
+            bounds.x_max = Math.max(bounds.x_max, x_max);
+            bounds.y_max = Math.max(bounds.y_max, y_max);
+          }
+
+          return bounds;
+        }
+
+        return false;
+      } // end get face area
+      // returns autocrop bounds to center on detected faces
+
+    }, {
+      key: "_getAutoCropBounds",
+      value: function _getAutoCropBounds(facebounds) {
+        console.log('init.3 crop bounds'); // no faces detected
+
+        if (!facebounds) {
+          console.log('no faces detected');
+          return false;
+        }
+
+        var w = facebounds.w,
+            h = facebounds.h,
+            x = facebounds.x,
+            y = facebounds.y; // get aspect ratio
+
+        var ar = this.options.aspectRatio; // new values
+
+        var nw = 0;
+        var nh = 0; // get the width and height to contain the faces and meet aspect ratio
+        // x is the long side
+
+        if (ar != 1) {
+          // not a square mosaic
+          // h == 1
+          nw = h * ar;
+
+          if (nw < w) {
+            // w == 1
+            nh = w / ar;
+            nw = w;
+          } else {
+            nh = h;
+          }
+        } else {
+          // square mosaic
+          nw = nh = Math.max(w, h);
+        } // adjust faces to fit in the middle of the containment bounds
+
+
+        var nx = this._centerFaceBox(nw, w, x);
+
+        var ny = this._centerFaceBox(nh, h, y); // add padding around face box
+
+
+        var p = .08;
+        var padding = Math.ceil(Math.min(nw, nh) * p); // dictionary formatted specifically for cropper
+
+        var cdata = {
+          left: Math.max(0, nx - padding),
+          top: Math.max(0, ny - padding),
+          width: Math.min(this.displaySize.width, nw + padding),
+          height: Math.min(this.displaySize.height, nh + padding)
+        };
+        return cdata;
+      } // end get crop area
+
+    }, {
+      key: "_centerFaceBox",
+      value: function _centerFaceBox(border, center, oldPos) {
+        var move = (border - center) / 2;
+        return Math.max(0, oldPos - move);
+      }
+    }]);
+    return AutoFace;
+  }(); // end class
+
+
+  return AutoFace;
+});
+
+},{"@babel/runtime/helpers/asyncToGenerator":4,"@babel/runtime/helpers/classCallCheck":5,"@babel/runtime/helpers/createClass":6,"@babel/runtime/helpers/interopRequireDefault":7,"@babel/runtime/helpers/typeof":8,"@babel/runtime/regenerator":9}],2:[function(require,module,exports){
+"use strict";
+
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
+
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/classCallCheck"));
 
 var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
@@ -278,293 +490,283 @@ var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
   return ConvertPhoto;
 });
 
-},{"@babel/runtime/helpers/classCallCheck":4,"@babel/runtime/helpers/createClass":5,"@babel/runtime/helpers/interopRequireDefault":6,"@babel/runtime/helpers/typeof":7}],2:[function(require,module,exports){
-// window.onload = function () {
-'use strict'; // imports
+},{"@babel/runtime/helpers/classCallCheck":5,"@babel/runtime/helpers/createClass":6,"@babel/runtime/helpers/interopRequireDefault":7,"@babel/runtime/helpers/typeof":8}],3:[function(require,module,exports){
+"use strict";
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
-var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
-
-var _asyncToGenerator2 = _interopRequireDefault(require("@babel/runtime/helpers/asyncToGenerator"));
 
 var _cropperjs = _interopRequireDefault(require("cropperjs"));
 
 var _ConvertPhoto = _interopRequireDefault(require("./ConvertPhoto.js"));
 
-// MAIN GLOBALS
-var USERCHOICE = {
-  color: 'CL',
-  // one of ['CL', 'GR', 'BW']
-  palette: [],
-  basePlate: 32,
-  x: 64,
-  y: 64,
-  tileWidth: 8,
+var _AutoFace = _interopRequireDefault(require("./AutoFace.js"));
 
-  get tileHeight() {
-    return this.tileWidth;
+// imports
+// window.onload = function () {
+(function () {
+  'use strict'; // MAIN GLOBALS
+
+  var USERCHOICE = {
+    color: 'CL',
+    // one of ['CL', 'GR', 'BW']
+    palette: [],
+    basePlate: 32,
+    x: 64,
+    y: 64,
+    tileWidth: 8,
+
+    get tileHeight() {
+      return this.tileWidth;
+    },
+
+    get aspectRatio() {
+      return this.x / this.y;
+    } // get isSquare(){return this.x == this.y},
+
+
   },
+      // values are { userColor : [ {r,g,b}, ] }
+  COLORDATA = null; //get json data passed to template
 
-  get aspectRatio() {
-    return this.x / this.y;
-  } // get isSquare(){return this.x == this.y},
+  getColorList(); // cropper variables
 
-
-},
-    // values are { userColor : [ {r,g,b}, ] }
-COLORDATA = null; // cropper variables
-// var Cropper = window.Cropper,
-// var Cropper = require('cropperjs');
-
-var URL = window.URL || window.webkitURL,
-    // active crop container / image
-containerMain = document.getElementById('containerUploaded'),
-    image = document.getElementById('imgUploaded'),
-    // preview result container
-containerResult = document.getElementById('containerResult'),
-    // the cropper docs
-// https://github.com/fengyuanchen/cropperjs#options
-// options for the cropper object
-options = {
-  aspectRatio: USERCHOICE.aspectRatio,
-  ready: function ready(e) {
-    console.log(e.type); // there should be a better way to do this, but for now
-
-    if (COLORDATA === null) {
-      getColorList();
-    } else {
-      canvasPreview();
-    }
-
-    saveMosaic.disabled = false;
-  },
-  // preview: containerResult,
-  viewMode: 2,
-  cropstart: function cropstart(e) {
-    console.log(e.type, e.detail.action);
-  },
-  cropmove: function cropmove(e) {// console.log(e.type, e.detail.action);
-  },
-  cropend: function cropend(e) {
-    console.log(e.type, e.detail.action); // there should be a better way to do this, but for now
-
-    if (COLORDATA === null) {
-      getColorList();
-    } else {
-      canvasPreview();
-    }
-  },
-  crop: function crop(e) {
-    var data = e.detail;
+  var URL = window.URL || window.webkitURL,
+      // active crop container / image
+  // CONTAINER_MAIN = document.getElementById('containerUploaded'),
+  IMAGE = document.getElementById('imgUploaded'),
+      // preview result container
+  CONTAINER_RESULT = document.getElementById('containerResult'),
+      // the cropper docs
+  // https://github.com/fengyuanchen/cropperjs#options
+  // options for the cropper object
+  DEFAULT_READY = function DEFAULT_READY(e) {
+    console.log('calling default');
     console.log(e.type);
+    canvasPreview();
+    SAVE_MOSAIC.disabled = false;
   },
-  zoom: function zoom(e) {
-    console.log(e.type, e.detail.ratio);
-  }
-},
-    // keep track of image upload object values
-cropper = new _cropperjs["default"](image, options),
-    uploadedImageType,
-    uploadedImageName,
-    uploadedImageURL,
-    previewSize;
-var saveMosaic = document.getElementById('save');
+      CROPPER_OPTIONS = {
+    aspectRatio: USERCHOICE.aspectRatio,
+    viewMode: 2,
+    ready: DEFAULT_READY,
+    cropstart: function cropstart(e) {
+      console.log(e.type, e.detail.action);
+    },
+    cropmove: function cropmove(e) {
+      console.log(e.type, e.detail.action);
+    },
+    cropend: function cropend(e) {
+      console.log(e.type, e.detail.action);
+      canvasPreview();
+    },
+    crop: function crop(e) {
+      var data = e.detail;
+      console.log(e.type);
+    },
+    zoom: function zoom(e) {
+      console.log(e.type, e.detail.ratio);
+    }
+  },
+      // keep track of image upload object values
+  CROPPER = new _cropperjs["default"](IMAGE, CROPPER_OPTIONS),
+      UPLOADED_IMAGE_TYPE,
+      UPLOADED_IMAGE_NAME,
+      UPLOADED_IMAGE_URL;
 
-saveMosaic.onclick = function () {
-  if (!USERCHOICE.hasOwnProperty('mosaic') || !USERCHOICE.hasOwnProperty('materials')) {
-    throw new Error('no mosaic data was saved');
-  }
+  var SAVE_MOSAIC = document.getElementById('save');
 
-  var csrftoken = getCookie('csrftoken');
-  var headers = {
-    'X-CSRFToken': csrftoken,
-    'Accept': 'application/json, text/plain, */*',
-    'Content-Type': 'application/json'
-  };
-  saveMosaic.disabled = true;
-  fetch("setColorData/", {
-    method: 'POST',
-    body: JSON.stringify({
-      color: USERCHOICE.color,
-      mosaic: USERCHOICE.mosaic,
-      materials: USERCHOICE.materials,
-      plates: USERCHOICE.x / USERCHOICE.basePlate + USERCHOICE.y / USERCHOICE.basePlate
-    }),
-    headers: headers // credentials: 'same-origin',
-
-  }).then(function (response) {
-    if (response.status < 200 || response.status > 200) {
-      console.log('save mosaic to server not ok. Status code: ' + response.status);
-      saveMosaic.disabled = false;
-      return;
+  SAVE_MOSAIC.onclick = function () {
+    if (!USERCHOICE.hasOwnProperty('mosaic') || !USERCHOICE.hasOwnProperty('materials')) {
+      throw new Error('no mosaic data was saved');
     }
 
-    response.json().then(function (resp) {
-      console.log('save mosaic came back ok: ' + resp);
-      saveMosaic.disabled = false;
+    var csrftoken = getCookie('csrftoken');
+    var headers = {
+      'X-CSRFToken': csrftoken,
+      'Accept': 'application/json, text/plain, */*',
+      'Content-Type': 'application/json'
+    };
+    SAVE_MOSAIC.disabled = true;
+    fetch("setColorData/", {
+      method: 'POST',
+      body: JSON.stringify({
+        color: USERCHOICE.color,
+        mosaic: USERCHOICE.mosaic,
+        materials: USERCHOICE.materials,
+        plates: USERCHOICE.x / USERCHOICE.basePlate + USERCHOICE.y / USERCHOICE.basePlate
+      }),
+      headers: headers // credentials: 'same-origin',
+
+    }).then(function (response) {
+      if (response.status < 200 || response.status > 200) {
+        console.log('save mosaic to server not ok. Status code: ' + response.status);
+        SAVE_MOSAIC.disabled = false;
+        return;
+      }
+
+      response.json().then(function (resp) {
+        console.log('save mosaic came back ok: ' + resp);
+        SAVE_MOSAIC.disabled = false;
+      });
+    })["catch"](function (err) {
+      console.log('save mosaic data Error: ', err);
+      SAVE_MOSAIC.disabled = false;
     });
-  })["catch"](function (err) {
-    console.log('save mosaic data Error: ', err);
-    saveMosaic.disabled = false;
-  });
-}; // makes a call to the server to get the allowed colors for conversion
+  }; // gets the color data passed to the template
 
 
-function getColorList() {
-  return _getColorList.apply(this, arguments);
-} // end get color list
+  function getColorList() {
+    // handle color choices from the template
+    var jsonValueID = 'colordata';
 
-/**
-*  get a canvas object from the cropper plugin and send it thru PhotoMosaic
-*/
+    try {
+      var cd = JSON.parse(document.getElementById(jsonValueID).textContent);
+      console.log("using color choice ".concat(USERCHOICE.color));
+      COLORDATA = cd;
+      USERCHOICE.palette = COLORDATA[USERCHOICE.color]; // for dev
 
+      displayPalette();
+    } catch (e) {
+      console.warn(e);
+    }
+  } // end get color list
 
-function _getColorList() {
-  _getColorList = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee() {
-    return _regenerator["default"].wrap(function _callee$(_context) {
-      while (1) {
-        switch (_context.prev = _context.next) {
-          case 0:
-            console.log(' --!! getting color list !!--'); // get color choices from the server
-            // should return { colorChoice : [ {rgb}, ] }, names : {name : {rgb}}  }
-
-            fetch('getColorData/').then(function (response) {
-              if (response.status !== 200) {
-                console.log('get color data response not 200. Status Code: ' + response.status);
-                COLORDATA = null;
-                return;
-              } // status OK
+  /**
+  *  get a canvas object from the cropper plugin and send it thru PhotoMosaic
+  */
 
 
-              response.json().then(function (data) {
-                console.log("using color choice ".concat(USERCHOICE.color));
-                COLORDATA = data;
-                USERCHOICE.palette = COLORDATA[USERCHOICE.color];
-                canvasPreview(); // for dev
+  function canvasPreview() {
+    console.log(' ---  canvas preview --- ');
+    var previewWidth = USERCHOICE.x * USERCHOICE.tileWidth;
+    var previewHeight = USERCHOICE.y * USERCHOICE.tileHeight; // first get Cropped canvas
 
-                displayPalette();
-              });
-            })["catch"](function (err) {
-              console.log('get color data Error: ', err);
-              COLORDATA = null;
-            });
+    var ops = {
+      width: previewWidth,
+      height: previewHeight,
+      // suggestions from docs
+      minWidth: 256,
+      minHeight: 256,
+      maxWidth: 4096,
+      maxHeight: 4096 // fillColor: '#fff',
+      // imageSmoothingEnabled: false,
+      // imageSmoothingQuality: 'high',
 
-          case 2:
-          case "end":
-            return _context.stop();
+    }; // call PhotoMosaic to tile the image
+
+    var convertPhoto = new _ConvertPhoto["default"]({
+      colorChoice: USERCHOICE.color,
+      palette: USERCHOICE.palette,
+      // colorNames: COLORDATA.names,
+      targetElement: CONTAINER_RESULT,
+      canvas: CROPPER.getCroppedCanvas(ops),
+      tileWidth: USERCHOICE.tileWidth,
+      tileHeight: USERCHOICE.tileHeight,
+      tilesX: USERCHOICE.x,
+      tilesY: USERCHOICE.y
+    });
+    convertPhoto.tileCanvas();
+    USERCHOICE.materials = convertPhoto.getBillOfMaterials();
+    USERCHOICE.mosaic = convertPhoto.mosaicRGBAStrings;
+  } // end preview canvas
+
+
+  function displayPalette() {
+    // easy visual for development
+    // display colors for mosaic
+    var cls = 'sample-colors';
+    var spanContainer = document.getElementById('paletteContainer');
+    USERCHOICE.palette.forEach(function (val) {
+      var span = document.createElement('span');
+      span.classList.add(cls);
+      span.style.backgroundColor = 'rgba(' + val.r + ', ' + val.g + ', ' + val.b + ')';
+      spanContainer.appendChild(span);
+    });
+  } // Import image
+
+
+  var importImage = document.getElementById('importImage');
+
+  if (URL) {
+    importImage.onchange = function () {
+      var files = this.files;
+      var file; // make sure a file was uploaded
+
+      if (CROPPER && files && files.length) {
+        file = files[0]; // make sure it's an image file
+
+        if (/^image\/\w+/.test(file.type)) {
+          UPLOADED_IMAGE_TYPE = file.type;
+          UPLOADED_IMAGE_NAME = file.name; // release previous upload url
+
+          if (UPLOADED_IMAGE_URL) {
+            URL.revokeObjectURL(UPLOADED_IMAGE_URL);
+          } // create new cropping image
+
+
+          IMAGE.src = UPLOADED_IMAGE_URL = URL.createObjectURL(file); // settting this for test
+          // image.height = 400;
+
+          CROPPER.destroy(); // create new crop object tro load the image for detect face
+
+          CROPPER_OPTIONS.ready = autoFaceOnReady;
+          CROPPER = new _cropperjs["default"](IMAGE, CROPPER_OPTIONS); // clear file upload input for next upload
+
+          importImage.value = null;
+        } else {
+          window.alert('Please choose an image file.');
         }
       }
-    }, _callee);
-  }));
-  return _getColorList.apply(this, arguments);
-}
-
-function canvasPreview() {
-  console.log(' ---  canvas preview --- ');
-  var previewWidth = USERCHOICE.x * USERCHOICE.tileWidth;
-  var previewHeight = USERCHOICE.y * USERCHOICE.tileHeight; // first get Cropped canvas
-
-  var ops = {
-    width: previewWidth,
-    height: previewHeight,
-    // suggestions from docs
-    minWidth: 256,
-    minHeight: 256,
-    maxWidth: 4096,
-    maxHeight: 4096 // fillColor: '#fff',
-    // imageSmoothingEnabled: false,
-    // imageSmoothingQuality: 'high',
-
-  }; // call PhotoMosaic to tile the image
-
-  var convertPhoto = new _ConvertPhoto["default"]({
-    colorChoice: USERCHOICE.color,
-    palette: USERCHOICE.palette,
-    // colorNames: COLORDATA.names,
-    targetElement: containerResult,
-    canvas: cropper.getCroppedCanvas(ops),
-    tileWidth: USERCHOICE.tileWidth,
-    tileHeight: USERCHOICE.tileHeight,
-    tilesX: USERCHOICE.x,
-    tilesY: USERCHOICE.y
-  });
-  convertPhoto.tileCanvas();
-  USERCHOICE.materials = convertPhoto.getBillOfMaterials();
-  USERCHOICE.mosaic = convertPhoto.mosaicRGBAStrings;
-} // end preview canvas
+    };
+  } else {
+    importImage.disabled = true;
+    importImage.parentNode.className += ' disabled';
+  } // change the cropper default ready function
 
 
-function displayPalette() {
-  // easy visual for development
-  // display colors for mosaic
-  var cls = 'sample-colors';
-  var spanContainer = document.getElementById('paletteContainer');
-  USERCHOICE.palette.forEach(function (val) {
-    var span = document.createElement('span');
-    span.classList.add(cls);
-    span.style.backgroundColor = 'rgba(' + val.r + ', ' + val.g + ', ' + val.b + ')';
-    spanContainer.appendChild(span);
-  });
-} // Import image
+  function autoFaceOnReady(e) {
+    console.log('calling autoface'); // TODO: set up a loading overlay to give auto detect faces time to return
+
+    console.log(e.type); // get the auto crop bound if there are faces
+
+    var autoFaceOptions = {
+      image: IMAGE,
+      aspectRatio: USERCHOICE.aspectRatio
+    };
+    new _AutoFace["default"](autoFaceOptions).results.then(function (resp) {
+      console.log('-- cropper ready for face bounds ---');
+
+      if (resp) {
+        CROPPER.setCropBoxData(resp);
+      }
+
+      canvasPreview();
+      SAVE_MOSAIC.disabled = false;
+    });
+  } // a js snippit to get the cookie from a browser
 
 
-var importImage = document.getElementById('importImage');
+  function getCookie(name) {
+    var cookieValue = null;
 
-if (URL) {
-  importImage.onchange = function () {
-    var files = this.files;
-    var file; // make sure a file was uploaded
+    if (document.cookie && document.cookie !== '') {
+      var cookies = document.cookie.split(';');
 
-    if (cropper && files && files.length) {
-      file = files[0]; // make sure it's an image file
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim(); // Does this cookie string begin with the name we want?
 
-      if (/^image\/\w+/.test(file.type)) {
-        uploadedImageType = file.type;
-        uploadedImageName = file.name; // release previous upload url
-
-        if (uploadedImageURL) {
-          URL.revokeObjectURL(uploadedImageURL);
-        } // create new cropping image
-
-
-        image.src = uploadedImageURL = URL.createObjectURL(file); // settting this for test
-
-        image.height = 400;
-        cropper.destroy();
-        cropper = new _cropperjs["default"](image, options); // clear file upload input for next upload
-
-        importImage.value = null;
-      } else {
-        window.alert('Please choose an image file.');
+        if (cookie.substring(0, name.length + 1) === name + '=') {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
       }
     }
-  };
-} else {
-  importImage.disabled = true;
-  importImage.parentNode.className += ' disabled';
-}
 
-function getCookie(name) {
-  var cookieValue = null;
-
-  if (document.cookie && document.cookie !== '') {
-    var cookies = document.cookie.split(';');
-
-    for (var i = 0; i < cookies.length; i++) {
-      var cookie = cookies[i].trim(); // Does this cookie string begin with the name we want?
-
-      if (cookie.substring(0, name.length + 1) === name + '=') {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
+    return cookieValue;
   }
+})(); // };
 
-  return cookieValue;
-} // };
-
-},{"./ConvertPhoto.js":1,"@babel/runtime/helpers/asyncToGenerator":3,"@babel/runtime/helpers/interopRequireDefault":6,"@babel/runtime/regenerator":8,"cropperjs":9}],3:[function(require,module,exports){
+},{"./AutoFace.js":1,"./ConvertPhoto.js":2,"@babel/runtime/helpers/interopRequireDefault":7,"cropperjs":10}],4:[function(require,module,exports){
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
   try {
     var info = gen[key](arg);
@@ -602,7 +804,7 @@ function _asyncToGenerator(fn) {
 }
 
 module.exports = _asyncToGenerator;
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 function _classCallCheck(instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -610,7 +812,7 @@ function _classCallCheck(instance, Constructor) {
 }
 
 module.exports = _classCallCheck;
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 function _defineProperties(target, props) {
   for (var i = 0; i < props.length; i++) {
     var descriptor = props[i];
@@ -628,7 +830,7 @@ function _createClass(Constructor, protoProps, staticProps) {
 }
 
 module.exports = _createClass;
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : {
     "default": obj
@@ -636,7 +838,7 @@ function _interopRequireDefault(obj) {
 }
 
 module.exports = _interopRequireDefault;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 function _typeof(obj) {
   "@babel/helpers - typeof";
 
@@ -654,10 +856,10 @@ function _typeof(obj) {
 }
 
 module.exports = _typeof;
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 module.exports = require("regenerator-runtime");
 
-},{"regenerator-runtime":10}],9:[function(require,module,exports){
+},{"regenerator-runtime":11}],10:[function(require,module,exports){
 /*!
  * Cropper.js v1.5.7
  * https://fengyuanchen.github.io/cropperjs
@@ -4275,7 +4477,7 @@ module.exports = require("regenerator-runtime");
 
 })));
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /**
  * Copyright (c) 2014-present, Facebook, Inc.
  *
@@ -5025,4 +5227,4 @@ try {
   Function("r", "regeneratorRuntime = r")(runtime);
 }
 
-},{}]},{},[2]);
+},{}]},{},[3]);

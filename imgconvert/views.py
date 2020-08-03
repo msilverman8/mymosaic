@@ -20,13 +20,29 @@ import io
 import json
 
 
+def get_color_data(request):
+    response = {
+        'CL': BrickMosaic().get_filtered_colors('CL'),
+        'GR': BrickMosaic().get_filtered_colors('GR'),
+        'BW': BrickMosaic().get_filtered_colors('BW'),
+        # 'AL': BrickMosaic().get_filtered_colors('AL'),
+        # 'names': BrickMosaic().get_name_to_color(),
+    }
+    return JsonResponse(response)
+
+
 class Index(TemplateView):
     template_name = 'imgconvert/index.html'
 
+    def color_data(self):
+        return {
+            'CL': BrickMosaic().get_filtered_colors('CL'),
+            'GR': BrickMosaic().get_filtered_colors('GR'),
+            'BW': BrickMosaic().get_filtered_colors('BW'),
+            # 'AL': BrickMosaic().get_filtered_colors('AL'),
+            # 'names': BrickMosaic().get_name_to_color(),
+        }
 
-# class InstructionView(DetailView):
-#     model = Mosaic
-#     template_name = "imgconvert/instructions.html"
 
 
 class InstructionView(TemplateView):
@@ -44,21 +60,9 @@ class InstructionView(TemplateView):
         return context
 
 
-
 def testInstructionPage(request, pk):
     get_object_or_404(Mosaic, pk=pk)
     return redirect("imgconvert:instructions", pk=pk)
-
-
-def get_color_data(request):
-    response = {
-        'CL': BrickMosaic().get_filtered_colors('CL'),
-        'GR': BrickMosaic().get_filtered_colors('GR'),
-        'BW': BrickMosaic().get_filtered_colors('BW'),
-        # 'AL': BrickMosaic().get_filtered_colors('AL'),
-        # 'names': BrickMosaic().get_name_to_color(),
-    }
-    return JsonResponse(response)
 
 
 class SetColorData(APIView):

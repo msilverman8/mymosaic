@@ -12,6 +12,7 @@ const watchify = require('watchify');
 const rename = require('gulp-rename');
 const sourcemaps = require('gulp-sourcemaps');
 const del = require('del');
+const log = require('fancy-log');
 
 // urls
 // globs don't work on windows....fix this when there are more apps
@@ -26,9 +27,24 @@ const buildDIR = './build/build/';
 
 // clear the build directory
 function clean(done) {
-  del([ buildDIR + '*/**'], {force: true});
+  // if dryrun true, don't delete just display to be deleted
+  const dryrun = false;
+  del([
+      buildDIR + '*/**',
+      '!' + buildDIR + 'manualAdds'
+    ], {
+      dryRun: dryrun,
+    })
+      .then((resp) => {
+        if(dryrun){
+          log('---- to be deleted ----');
+          log(resp);
+        }
+      })
+      .catch((e) => {log(e);});
   done();
 }
+
 
 // js locations
 const jsFOLDER = 'scripts/';
@@ -56,7 +72,7 @@ function js(done) {
     .bundle() // bundle transformed
     .pipe( source( entry ))
     .pipe( rename({
-      basename: 'bundle',
+      basename: 'bundle_' + entry.split('.')[0],
       extname: '.js'
     }))
     .pipe( buffer()) // buffer for the next series of alterations
@@ -75,12 +91,14 @@ const vendorSRC = './node_modules/';
 const commonDIR = ''
 const vendorLIST = [
   'cropperjs/dist/cropper.min.css',
+  'face-api.js/dist/face-api.min.js',
+  'face-api.js/dist/face-api.js.map',
 ];
 const vendorDEST = buildDIR + 'vendor/';
 
 function copy(done) {
   vendorLIST.map( function(entry) {
-    src(vendorSRC + entry)
+    return src(vendorSRC + entry)
     .pipe( dest(vendorDEST) );
   })
   done();
@@ -93,5 +111,8 @@ function watch_files() {
   watch(jsWATCH, js);
 }
 
+exports.clean = series(clean);
+exports.copy = series(copy);
+exports.js = series(js);
 exports.watch = series(watch_files);
-exports.default = series(clean, parallel(copy, js))
+exports.default = series(clean, parallel(copy, js));

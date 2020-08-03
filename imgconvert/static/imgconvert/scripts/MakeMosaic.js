@@ -7,7 +7,7 @@
   class MakeMosaic {
     constructor(options){
       console.log(' ~~ calling display mosaic ~~');
-      const requiredOptions = ['targetCanvas', 'overlayCanvas', 'rgbaStringList', 'countContainer']
+      const requiredOptions = ['targetCanvas', 'overlayCanvas', 'rgbaStringList', 'countContainer'];
       requiredOptions.forEach((op) => {
         if (!options[op]) {
           throw new Error(`${op} not passed with options!`);

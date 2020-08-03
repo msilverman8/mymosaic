@@ -1,8 +1,9 @@
+// imports
+import Cropper from 'cropperjs';
+import ConvertPhoto from './ConvertPhoto.js';
+import AutoFace from './AutoFace.js';
 // window.onload = function () {
-  'use strict';
-  // imports
-  import Cropper from 'cropperjs';
-  import ConvertPhoto from './ConvertPhoto.js';
+(function() {'use strict';
 
   // MAIN GLOBALS
   var USERCHOICE = {
@@ -19,47 +20,38 @@
       // values are { userColor : [ {r,g,b}, ] }
       COLORDATA = null;
 
+  //get json data passed to template
+  getColorList();
 
   // cropper variables
-  // var Cropper = window.Cropper,
-  // var Cropper = require('cropperjs');
   var URL = window.URL || window.webkitURL,
       // active crop container / image
-      containerMain = document.getElementById('containerUploaded'),
-      image = document.getElementById('imgUploaded'),
+      // CONTAINER_MAIN = document.getElementById('containerUploaded'),
+      IMAGE = document.getElementById('imgUploaded'),
       // preview result container
-      containerResult = document.getElementById('containerResult'),
+      CONTAINER_RESULT = document.getElementById('containerResult'),
       // the cropper docs
       // https://github.com/fengyuanchen/cropperjs#options
       // options for the cropper object
-      options = {
+      DEFAULT_READY = function (e) {
+        console.log('calling default');
+        console.log(e.type);
+        canvasPreview();
+        SAVE_MOSAIC.disabled = false;
+      },
+      CROPPER_OPTIONS = {
         aspectRatio: USERCHOICE.aspectRatio,
-        ready: function (e) {
-          console.log(e.type);
-          // there should be a better way to do this, but for now
-          if(COLORDATA === null){
-            getColorList();
-          }else{
-            canvasPreview();
-          }
-          saveMosaic.disabled = false;
-        },
-        // preview: containerResult,
         viewMode: 2,
+        ready: DEFAULT_READY,
         cropstart: function (e) {
           console.log(e.type, e.detail.action);
         },
         cropmove: function (e) {
-          // console.log(e.type, e.detail.action);
+          console.log(e.type, e.detail.action);
         },
         cropend: function (e) {
           console.log(e.type, e.detail.action);
-          // there should be a better way to do this, but for now
-          if(COLORDATA === null){
-            getColorList();
-          }else{
-            canvasPreview();
-          }
+          canvasPreview();
         },
         crop: function (e) {
           var data = e.detail;
@@ -71,14 +63,13 @@
         }
       },
       // keep track of image upload object values
-      cropper = new Cropper(image, options),
-      uploadedImageType,
-      uploadedImageName,
-      uploadedImageURL,
-      previewSize;
+      CROPPER = new Cropper(IMAGE, CROPPER_OPTIONS),
+      UPLOADED_IMAGE_TYPE,
+      UPLOADED_IMAGE_NAME,
+      UPLOADED_IMAGE_URL;
 
-  var saveMosaic = document.getElementById('save');
-  saveMosaic.onclick = function(){
+  const SAVE_MOSAIC = document.getElementById('save');
+  SAVE_MOSAIC.onclick = function(){
     if(!USERCHOICE.hasOwnProperty('mosaic') || !USERCHOICE.hasOwnProperty('materials')){
       throw new Error('no mosaic data was saved');
     }
@@ -90,7 +81,7 @@
       'Content-Type': 'application/json'
     }
 
-    saveMosaic.disabled = true;
+    SAVE_MOSAIC.disabled = true;
     fetch("setColorData/", {
         method: 'POST',
         body: JSON.stringify({
@@ -106,48 +97,34 @@
       function(response) {
         if (response.status < 200 || response.status > 200) {
           console.log('save mosaic to server not ok. Status code: ' + response.status);
-          saveMosaic.disabled = false;
+          SAVE_MOSAIC.disabled = false;
           return
         }
         response.json().then(function(resp) {
           console.log('save mosaic came back ok: ' + resp);
-          saveMosaic.disabled = false;
+          SAVE_MOSAIC.disabled = false;
         })
       }
     )
     .catch(function(err) {
       console.log('save mosaic data Error: ', err);
-      saveMosaic.disabled = false;
+      SAVE_MOSAIC.disabled = false;
     });
   }
-  // makes a call to the server to get the allowed colors for conversion
-  async function getColorList(){
-    console.log(' --!! getting color list !!--');
-    // get color choices from the server
-    // should return { colorChoice : [ {rgb}, ] }, names : {name : {rgb}}  }
-    fetch('getColorData/')
-    .then(
-      function(response) {
-        if (response.status !== 200) {
-          console.log('get color data response not 200. Status Code: ' + response.status);
-          COLORDATA = null;
-          return
-        }
-        // status OK
-        response.json().then(function(data) {
-          console.log(`using color choice ${USERCHOICE.color}`);
-          COLORDATA = data;
-          USERCHOICE.palette = COLORDATA[USERCHOICE.color];
-          canvasPreview();
-          // for dev
-          displayPalette();
-        });
-      }
-    )
-    .catch(function(err) {
-      console.log('get color data Error: ', err);
-      COLORDATA = null;
-    });
+
+  // gets the color data passed to the template
+  function getColorList(){
+    // handle color choices from the template
+    const jsonValueID = 'colordata';
+    try {
+      const cd = JSON.parse(document.getElementById(jsonValueID).textContent);
+      console.log(`using color choice ${USERCHOICE.color}`);
+      COLORDATA = cd;
+      USERCHOICE.palette = COLORDATA[USERCHOICE.color];
+      // for dev
+      displayPalette();
+    }
+    catch(e) {console.warn(e)}
   } // end get color list
 
   /**
@@ -177,8 +154,8 @@
       colorChoice: USERCHOICE.color,
       palette: USERCHOICE.palette,
       // colorNames: COLORDATA.names,
-      targetElement: containerResult,
-      canvas: cropper.getCroppedCanvas(ops),
+      targetElement: CONTAINER_RESULT,
+      canvas: CROPPER.getCroppedCanvas(ops),
       tileWidth: USERCHOICE.tileWidth,
       tileHeight: USERCHOICE.tileHeight,
       tilesX: USERCHOICE.x,
@@ -205,7 +182,7 @@
   }
 
   // Import image
-  var importImage = document.getElementById('importImage');
+  const importImage = document.getElementById('importImage');
 
   if (URL) {
     importImage.onchange = function () {
@@ -213,26 +190,28 @@
       var file;
 
       // make sure a file was uploaded
-      if (cropper && files && files.length) {
+      if (CROPPER && files && files.length) {
         file = files[0];
 
         // make sure it's an image file
         if (/^image\/\w+/.test(file.type)) {
-          uploadedImageType = file.type;
-          uploadedImageName = file.name;
+          UPLOADED_IMAGE_TYPE = file.type;
+          UPLOADED_IMAGE_NAME = file.name;
 
           // release previous upload url
-          if (uploadedImageURL) {
-            URL.revokeObjectURL(uploadedImageURL);
+          if (UPLOADED_IMAGE_URL) {
+            URL.revokeObjectURL(UPLOADED_IMAGE_URL);
           }
 
           // create new cropping image
-          image.src = uploadedImageURL = URL.createObjectURL(file);
+          IMAGE.src = UPLOADED_IMAGE_URL = URL.createObjectURL(file);
           // settting this for test
-          image.height = 400;
-          cropper.destroy();
-          cropper = new Cropper(image, options);
+          // image.height = 400;
+          CROPPER.destroy();
 
+          // create new crop object tro load the image for detect face
+          CROPPER_OPTIONS.ready = autoFaceOnReady;
+          CROPPER = new Cropper(IMAGE, CROPPER_OPTIONS);
           // clear file upload input for next upload
           importImage.value = null;
         } else {
@@ -245,6 +224,30 @@
     importImage.parentNode.className += ' disabled';
   }
 
+  // change the cropper default ready function
+  function autoFaceOnReady(e) {
+    console.log('calling autoface');
+    // TODO: set up a loading overlay to give auto detect faces time to return
+    console.log(e.type);
+    // get the auto crop bound if there are faces
+    const autoFaceOptions = {
+      image: IMAGE,
+      aspectRatio: USERCHOICE.aspectRatio,
+    };
+    new AutoFace(autoFaceOptions).results
+      .then(resp => {
+        console.log('-- cropper ready for face bounds ---');
+        if(resp) {
+          CROPPER.setCropBoxData(resp);
+        }
+
+        canvasPreview();
+        SAVE_MOSAIC.disabled = false;
+      })
+
+  }
+
+  // a js snippit to get the cookie from a browser
   function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -261,5 +264,5 @@
     return cookieValue;
 }
 
-
+})();
 // };

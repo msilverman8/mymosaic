@@ -9,6 +9,7 @@
   width: 100%;
   /* This rule is very important, please don't ignore this (cropperjs) */
   max-width: 100%;
+  /* height: 400px; */
 }
 
 #containerResult {

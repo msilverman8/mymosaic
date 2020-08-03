@@ -2,13 +2,15 @@
 {% load static %}
   {% block title %}Mosaic{% endblock title %}
   {% block extra_head %}
-  <!-- third party styles -->
-  <!-- <link  href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.7/cropper.css" rel="stylesheet"> -->
-  <link rel="stylesheet" href="{% static 'build/vendor/cropper.min.css' %}">
-  <!-- local styles -->
-  <link rel="stylesheet" href="{% static 'imgconvert/styles/main.css' %}">
+    <!-- third party styles -->
+    <!-- <link  href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.7/cropper.css" rel="stylesheet"> -->
+    <link rel="stylesheet" href="{% static 'build/vendor/cropper.min.css' %}">
+    <!-- local styles -->
+    <link rel="stylesheet" href="{% static 'imgconvert/styles/main.css' %}">
+    {% for data in view.color_data %}
+      {{ view.color_data|json_script:'colordata' }}
+    {% endfor %}
   {% endblock extra_head %}
-
 
 {% block content %}
 <div id="sideBysideContainer" class="container-fluid">
@@ -19,6 +21,7 @@
     <button id="save" type="button" name="button" class="col-md-3" disabled>SAVE</button>
   </div>
   <div class="row display-row">
+    <div class="ml-3 position-absolute" id="displayDetectFaces"></div>
     <!-- (cropper.js) Wrap the img/canvas (block) with another block element (container) -->
     <!-- cropper.js requires the img/canvas element to be the same size as container -->
     <div class="col-md-6">
@@ -40,12 +43,14 @@
     </div>
   </div> <!-- end controls row -->
 </div>
+
 {% endblock content %}
 
 {% block extra_script %}
   <!-- 3rd party scripts -->
-
+  <script type="text/javascript" src="{% static 'build/vendor/face-api.min.js' %}"></script>
   <!-- local scripts -->
-  <script type="text/javascript" src="{% static 'build/scripts/bundle.js' %}"></script>
+  <script type="text/javascript" src="{% static 'build/scripts/bundle_main.js' %}"></script>
+  <!-- <script type="text/javascript" src="{% static 'build/scripts/bundle_using-face-api.js' %}"></script> -->
 
 {% endblock extra_script %}

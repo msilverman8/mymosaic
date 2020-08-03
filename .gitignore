@@ -5,3 +5,10 @@ imgconvert/static/imgconvert/scripts/photomosaicold.js
 imgconvert/static/imgconvert/scripts/MosaicDisplayold.js
 node_modules
 /cssgulpfile.js
+/build/build/manualAdds/face_landmark_68_model-weights_manifest.json
+/build/build/manualAdds/face_landmark_68_model-shard1
+/build/build/manualAdds/face_landmark_68_tiny_model-shard1
+/build/build/manualAdds/face_landmark_68_tiny_model-weights_manifest.json
+/build/build/manualAdds/ssd_mobilenetv1_model-shard1
+/build/build/manualAdds/ssd_mobilenetv1_model-weights_manifest.json
+/imgconvert/static/imgconvert/scripts/copy-using-face-api.js
