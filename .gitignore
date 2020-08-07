@@ -12,3 +12,7 @@ node_modules
 /build/build/manualAdds/ssd_mobilenetv1_model-shard1
 /build/build/manualAdds/ssd_mobilenetv1_model-weights_manifest.json
 /imgconvert/static/imgconvert/scripts/copy-using-face-api.js
+.eslintrc
+imgconvert/static/imgconvert/scripts/brick.js
+imgconvert/static/imgconvert/scripts/bricker.js
+imgconvert/static/imgconvert/scripts/tile.js

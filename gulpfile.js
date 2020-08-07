@@ -70,6 +70,9 @@ function js(done) {
       ]
     })
     .bundle() // bundle transformed
+    // .on('error', e => {
+    //   log(e)
+    // })
     .pipe( source( entry ))
     .pipe( rename({
       basename: 'bundle_' + entry.split('.')[0],
@@ -93,6 +96,7 @@ const vendorLIST = [
   'cropperjs/dist/cropper.min.css',
   'face-api.js/dist/face-api.min.js',
   'face-api.js/dist/face-api.js.map',
+  'ditherjs/dist/ditherjs.dist.js'
 ];
 const vendorDEST = buildDIR + 'vendor/';
 
