@@ -8,6 +8,7 @@ from django.utils import timezone
 from .models import Mosaic, Order, MosaicOrder
 from .serializers import MosaicSerializer
 from .colors import BrickMosaic
+from .globals import COLOR_KEYS
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -34,14 +35,69 @@ def get_color_data(request):
 class Index(TemplateView):
     template_name = 'imgconvert/index.html'
 
-    def color_data(self):
+    def default_values(self):
         return {
-            'CL': BrickMosaic().get_filtered_colors('CL'),
-            'GR': BrickMosaic().get_filtered_colors('GR'),
-            'BW': BrickMosaic().get_filtered_colors('BW'),
-            # 'AL': BrickMosaic().get_filtered_colors('AL'),
-            # 'names': BrickMosaic().get_name_to_color(),
+            'bgPattern': {
+                'pattern': 'solid',  # one of the keys of this mosaic_tools.bgPattern
+                'max': 2,  # the max amount of display color choices for the template
+                'color': '255,255,255',  # the default color for the default pattern
+            },
+            'palette': COLOR_KEYS.color,  # the default palette selected from this color_data
         }
+
+    def mosaic_tools(self):
+        r = {
+            'mosaicTools': ["palette", "sliders", "bg"],  # the user settings for the mosaic
+            'plateCount': range(1, 4),  # the min and max of the plates allowed on a single side of the mosaic
+            'bgPattern': {  # key is the pattern name, value is the amount of colors the pattern needs
+                'burst': 2,
+                'solid': 1,
+            },
+            'sliderList': {
+                'brightness': {
+                    'range': [-100, 100],  # [-100, 100]
+                    'step': 1,
+                    'initialValue': 0,
+                },
+                # 'contrast': {  # looks like butt
+                #     'range': [-10, 10],  # [-100, 100]
+                #     'step': 1,
+                #     'initialValue': 0,
+                # },
+                'gamma': {
+                    'range': [0, 5],  # 0 - infinity 0-1 lessen contrast, 1+ will increase contrast
+                    'step': 0.1,
+                    'initialValue': 1,
+                },
+                'exposure': {   # based on curves ( adjust color values based on a bezier curve )
+                    'range': [-100, 100],  # [-100, 100]
+                    'step': 1,
+                    'initialValue': 0,
+                },
+                'vibrance': {  # a smart saturation tool, boosts less saturated color more than saturated colors
+                    'range': [-100, 100],  # [-100, 100]
+                    'step': 1,
+                    'initialValue': 0,
+                },
+            },
+            'paletteContent': {},  # is populated below from the palette name : color list object
+            # 'paletteColors': [],  # is populated below from the palette name : color list object
+        }
+        for key in COLOR_KEYS:
+            r['paletteContent'][key[0]] = key[1]
+            # for rgb in BrickMosaic().get_filtered_colors(key[0])['asArray']:
+            #     rgb_str = ','.join(rgb)
+            #     if rgb_str not in r['paletteColors']:
+            #         r['paletteColors'].append(rgb_str)
+        return r
+
+    def color_data(self):
+        """ returns all palette name : colors listed under palette objects """
+        r = {}
+        for key in COLOR_KEYS:
+            r[key[0]] = BrickMosaic().get_filtered_colors(key[0])
+
+        return r
 
 
 

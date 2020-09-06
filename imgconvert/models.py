@@ -1,28 +1,26 @@
 from django.db import models
 from django.conf import settings
 from django.shortcuts import reverse
-from django.contrib.postgres.fields import JSONField, ArrayField
-from model_utils import Choices
-from django.utils.translation import gettext_lazy as _
+from django.contrib.postgres.fields import JSONField
+from .globals import COLOR_KEYS
 
 
 class Mosaic(models.Model):
     """
     A table storing individual mosaics
     """
-    COLOR = Choices(('CL', _('color')), ('GR', _('grayscale')), ('BW', _('black & white')))
-    color = models.CharField(choices=COLOR, default=COLOR.CL, max_length=2)
+    color = models.CharField(choices=COLOR_KEYS, default=COLOR_KEYS.color, max_length=2)
     plates = models.IntegerField()
     mosaic = JSONField()
     materials = JSONField()
 
     def __str__(self):
         """ readable name for python object """
-        return f'A {self.COLOR[self.color]} mosaic with {self.plates} plates'
+        return f'A {COLOR_KEYS[self.color]} mosaic with {self.plates} plates'
 
     def get_price(self):
         """
-        the price is calculated based on # of plates??????????
+        the price is calculated based on # of plates
         """
         price = 50.00
         return price

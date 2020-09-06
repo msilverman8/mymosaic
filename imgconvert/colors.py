@@ -6,6 +6,8 @@ import pandas as pd
 # import face_recognition
 from django.contrib.staticfiles.storage import staticfiles_storage
 
+from .globals import PALETTE_CHOICE
+
 __all__ = ['BrickMosaic']
 __version__ = '0.0.1'
 __author__ = 'Michael Silverman'
@@ -62,21 +64,18 @@ class BrickMosaic:
 
     def get_filtered_colors(self, choice):
         """
-        choice : one of 'CL', 'GR', 'BW'
+        choice : one of .globals COLOR_KEYS
         returns a list of dictionaries based on choice passed
         [{r:0,g:0,b:0 },{r:0,g:0,b:0 },{...}]
+        OR
+        [ [r,g,b],... ]
         """
-        choices = {
-            'CL': 'is_topcolors',
-            'GR': 'is_greyscale',
-            'BW': 'is_blackwhite',
-            'AL': 'is_all',
-        }
+
         df = self.load_color_df()
-        if choices[choice] == 'is_all':
+        if PALETTE_CHOICE[choice] == 'is_all':
             ls = df['RGB'].to_list()
         else:
-            filtered_df = df.loc[df[choices[choice]] == 't']
+            filtered_df = df.loc[df[PALETTE_CHOICE[choice]] == 't']
             ls = filtered_df['RGB'].to_list()
 
         data = []
