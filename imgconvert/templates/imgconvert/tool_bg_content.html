@@ -1,0 +1,22 @@
+{# conent for the remove background dropdown in mosaic toolbar #}
+
+<div class="row" id="bgContent">
+
+  <div class="col-md-auto">
+    <div class="input-group m-1">
+      {% for pattern, colors in view.mosaic_tools.bgPattern.items %}
+        <input id="bg{{ pattern }}" type="radio" name="bgType" value="{{ pattern }}" data-option="{{ colors }}" data-main="palette" data-method="bgPattern" {% if pattern == view.default_values.bgPattern.pattern %}checked{% endif %}>
+        <label for="bg{{ pattern }}" class="btn btn-bg">{{ pattern|title }}</label>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="dropdown-divider-vertical"></div>
+  <div class="col" >
+    <div class="row">
+      <button type="button" class="btn btn-secondary">swap</button>
+    </div>
+    <div class="row palette-container" id="bgPalette">
+    </div>
+  </div>
+
+</div>

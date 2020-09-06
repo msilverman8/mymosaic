@@ -39,6 +39,7 @@
   "dependencies": {
     "@babel/runtime": "^7.10.5",
     "@tensorflow/tfjs-node": "^2.0.1",
+    "caman": "^4.1.2",
     "canvas": "^2.6.1",
     "cropperjs": "^1.5.7",
     "ditherjs": "^0.10.0",

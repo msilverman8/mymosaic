@@ -3,54 +3,82 @@
   {% block title %}Mosaic{% endblock title %}
   {% block extra_head %}
     <!-- third party styles -->
-    <!-- <link  href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.7/cropper.css" rel="stylesheet"> -->
     <link rel="stylesheet" href="{% static 'build/vendor/cropper.min.css' %}">
     <!-- local styles -->
     <link rel="stylesheet" href="{% static 'imgconvert/styles/main.css' %}">
-    {% for data in view.color_data %}
-      {{ view.color_data|json_script:'colordata' }}
-    {% endfor %}
+    {{ view.color_data|json_script:'colorData' }}
   {% endblock extra_head %}
 
 {% block content %}
-<div id="sideBysideContainer" class="container-fluid">
+    <!-- main body container -->
+    <div class="container-fluid">
+        <!-- site nav -->
+        <div class="row nav"></div>
+        <!-- three column container -->
+        <div class="row step-container">
+            <!-- step nav -->
+            <div class="col-md-1" id="steps-container">
+                <span class="mx-2">step column</span>
+            </div>
 
-  <div class="row">
-    <h1 class="col-md-6">Adjust Image</h1>
-    <h1 class="col-md-3">Result</h1>
-    <button id="save" type="button" name="button" class="col-md-3" disabled>SAVE</button>
-  </div>
-  <div class="row display-row">
-    <div class="ml-3 position-absolute" id="displayDetectFaces"></div>
-    <!-- (cropper.js) Wrap the img/canvas (block) with another block element (container) -->
-    <!-- cropper.js requires the img/canvas element to be the same size as container -->
-    <div class="col-md-6">
-      <div id="containerUploaded" class="img-container">
-          <img id="imgUploaded" class=""/>
-      </div>
-    </div>
-    <div class="col-md-6 clearfix">
-      <div id="containerResult" class="img-container">
-      </div>
-    </div>
-  </div> <!-- end display images row -->
-  <div class="row">
-    <div class="col-md-6">
-      <input type="file" id="importImage" name="file" accept="image/*">
-    </div>
-    <div id="paletteContainer" class="col-md-6">
-    </div>
-  </div> <!-- end controls row -->
-</div>
+            <!-- cropp upload image container -->
+            <div class="col-md-8" id="controls-container">
+
+                {% include 'imgconvert/crop_toolbar.html'%}
+
+                <!-- image container -->
+                {# <div class="row"> #}
+                    <!-- (cropper.js) Wrap the img/canvas (block) with another block element (container) -->
+                    <!-- cropper.js requires the img/canvas element to be the same size as container -->
+                    <div id="containerUploaded" class="img-container">
+                        <img id="imgUploaded" class=""/>
+                    </div>
+
+                {# </div> <!-- end display image container --> #}
+
+            </div> <!--end primary control-->
+
+            <div class="col-3" id="previewContainer">
+                <h2 class="mt-2">Preview</h2>
+                <div id="previewResult" class=""></div>
+            </div>
+
+        </div> <!-- end row containing main columns -->
+
+        {# container for elopment results preview #}
+        <div class="row step-container" >
+          <span class="col-md-1"></span>
+          <div class="col-md-8">
+              {% include "imgconvert/mosaic_toolbar.html" %}
+
+              <div class="" id="containerResult"> </div>
+          </div>
+          <div class="col-md-3" id="previewAdjustedImage">
+              <h2 class="mt-2 row">Cropped Section</h2>
+              <div id="previewSliderResult" class="row"></div>
+
+          </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-1">
+                <button id="save" type="button" class="btn btn-primary" disabled>SAVE</button>
+            </div>
+            <div id="devImageResult" class="col"></div>
+        </div> <!-- save and palette -->
+
+    </div> <!--end main content-->
+
 
 {% endblock content %}
 
 {% block extra_script %}
-  <!-- 3rd party scripts -->
-  <script type="text/javascript" src="{% static 'build/vendor/face-api.min.js' %}"></script>
-  <!-- <script type="text/javascript" src="{% static 'build/vendor/ditherjs.dist.js' %}"></script> -->
-  <!-- local scripts -->
-  <script type="text/javascript" src="{% static 'build/scripts/bundle_main.js' %}"></script>
-  <!-- <script type="text/javascript" src="{% static 'build/scripts/bundle_using-face-api.js' %}"></script> -->
+    <!-- 3rd party scripts -->
+    <script type="text/javascript" src="{% static 'build/vendor/face-api.min.js' %}"></script>
+    <!-- <script type="text/javascript" src="{% static 'build/vendor/ditherjs.dist.js' %}"></script> -->
+    <script type="text/javascript" src="{% static 'build/vendor/cropper.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'build/vendor/caman.min.js' %}"></script>
+    <!-- local scripts -->
+    <script type="text/javascript" src="{% static 'build/scripts/bundle_main.js' %}"></script>
 
 {% endblock extra_script %}

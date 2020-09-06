@@ -1,0 +1,14 @@
+{# content for the image adjustment sliders in the mosaic toolbar #}
+<div class="form-group" id="slidersContent">
+{% for slider, vals in view.mosaic_tools.sliderList.items %}
+  <div class="row mb-2">
+    <div class="col">
+      <label for="{{ slider }}Range">{{ slider }}</label>
+      <input type="range" class="form-control-range" id="{{ slider }}Range" min="{{ vals.range.0 }}" max="{{ vals.range.1 }}" step="{{ vals.step }}" data-method="{{ slider }}" data-main="caman" value="{{ vals.initialValue }}">
+    </div>
+    <div class="col-1">
+      <button type="button" class="btn btn-primary btn-sm mt-auto" data-main="caman" data-method="{{ slider }}" data-option="reset" value="{{ vals.initialValue }}">reset</button>
+    </div>
+  </div>
+{% endfor %}
+</div>

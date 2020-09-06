@@ -1,0 +1,46 @@
+{# toolbar for the cropping step #}
+
+<div class="btn-toolbar justify-content-around mb-2" role="toolbar" id="cropToolbar">
+    <!-- button one -->
+    <div class="btn-group">
+      {% include "imgconvert/plate_count_grp.html" with type="Width" %}
+      <p class="input-group-text">x</p>
+      {% include "imgconvert/plate_count_grp.html" with type="Height" %}
+    </div> <!-- end button 1 group -->
+
+    <!-- button 2 ZOOM -->
+    <div class="btn-group">
+        <button type="button" class="btn btn-primary" data-main="cropper" data-method="zoom" data-option="-0.1">
+              <span class="">.-.</span>
+        </button>
+        <button type="button" class="btn btn-primary" data-main="cropper" data-method="zoom" data-option="0.1">
+              <span class="">.+.</span>
+        </button>
+    </div> <!-- en button grp 2 ZOOM-->
+
+    <!-- button 3 ROTATE -->
+    <div class="btn-group">
+        <button type="button" class="btn btn-primary" data-main="cropper" data-method="rotate" data-option="-10">
+              <span class="">.<.</span>
+        </button>
+        <button type="button" class="btn btn-primary" data-main="cropper" data-method="rotate" data-option="10">
+              <span class="">.>.</span>
+        </button>
+    </div> <!-- end btn grp 3 ROTATE -->
+
+    <!-- button 4 FACE -->
+    <div class="btn-group">
+        <button type="button" class="btn btn-primary" data-method="autoface">
+            <span>.O.</span>
+        </button>
+    </div> <!-- end btn grp 4 FACE-->
+
+    <!-- button group 5 UPLOAD -->
+    <div class="btn-group">
+        {# <button type="button" class="btn btn-secondary"> #}
+          <input type="file" id="importImage" accept="image/*" class="d-none">
+          <label for="importImage" class="btn btn-secondary mb-0">Upload</label>
+        {# </button> #}
+    </div> <!-- end btn grp 5 UPLOAD -->
+
+</div> <!--end button toolbar-->

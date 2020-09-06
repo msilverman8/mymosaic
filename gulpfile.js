@@ -49,7 +49,7 @@ function clean(done) {
 // js locations
 const jsFOLDER = 'scripts/';
 const jsSRC = appGLOB + jsFOLDER;
-const jsFILES = ['main.js'];
+const jsFILES = ['main.js', 'camanProcess.js'];
 const jsDEST = buildDIR + jsFOLDER;
 
 function js(done) {
@@ -86,17 +86,19 @@ function js(done) {
   });
 
   done();
-
 }
 
 // copy npm modules that need to be copied and can't just be imported / required
 const vendorSRC = './node_modules/';
 const commonDIR = ''
 const vendorLIST = [
+  'caman/dist/caman.min.js',
   'cropperjs/dist/cropper.min.css',
+  'cropperjs/dist/cropper.min.js',
+  // 'ditherjs/dist/ditherjs.dist.js',
   'face-api.js/dist/face-api.min.js',
   'face-api.js/dist/face-api.js.map',
-  'ditherjs/dist/ditherjs.dist.js'
+
 ];
 const vendorDEST = buildDIR + 'vendor/';
 

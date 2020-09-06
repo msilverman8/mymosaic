@@ -1,0 +1,17 @@
+{# the content for the palette dropdown menu in the mosaic tool bar #}
+<ul class="nav nav-pills justify-content-around" id="paletteSelect" role="tablist">
+  {% for key, display in view.mosaic_tools.paletteContent.items %}
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if key == view.mosaic_tools.defaultPalette %}isDefault{% endif %}" data-toggle="pill" role="tab" id="{{ key }}-tab" href="#{{ key }}" data-main="globals" data-method="color" data-option="{{ key }}">{{ display }}</a>
+    </li>
+  {% endfor %}
+</ul>
+
+<div class="dropdown-divider"></div>
+
+<div class="tab-content" id="paletteContent">
+  {% for key, val in view.mosaic_tools.paletteContent.items %}
+    <div class="tab-pane fade" id="{{ key }}" role="tabpanel">
+    </div>
+  {% endfor %}
+</div>

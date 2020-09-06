@@ -8,7 +8,25 @@
   const DEFAULTS = {
     image: null,
     aspectRatio: 1,
+  };
+  // get api
+  const faceapi = window.faceapi;
+  // load model
+  loadModel().catch(e=>{ console.warn(e); });
+
+  // checks if model is loaded for face api, if not it loads it
+  async function loadModel() {
+    console.log('checking for face detect model');
+    // load the model for face-api
+    if(!faceapi.nets.tinyFaceDetector.isLoaded){
+      console.log('model not loaded, loading now');
+      let url = 'static/build/manualAdds/';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(url);
+    }
   }
+
+
+
   /**
    * uses face-api.js to detect faces and then returns dimension to auto crop area to include the faces
    */
@@ -18,13 +36,27 @@
         throw new Error(`image not passed with call to find face!`);
       }
 
+      // get instance options
       this.options = Object.assign({}, DEFAULTS, options);
+
       // get the display dimensions of the image to get accurate face bounds
-      const ic = this.options.image.parentElement;
-      this.displaySize = { width: ic.clientWidth, height: ic.clientHeight };
-      console.table(this.displaySize);
+      if(!options.hasOwnProperty('displaySize')){
+        let ic = this.options.image.parentElement;
+        if(!ic){ ic = { clientWidth: 0, clientHeight: 0, } };
+        this.options.displaySize = { width: ic.clientWidth, height: ic.clientHeight };
+      }
+
       // detect faces and get face detection object
       this.results = this._init().catch(e => { console.warn(e); });
+
+      if(this.options.useOriginal){ // sending over getData
+        this.maxWidth = this.options.image.naturalWidth;
+        this.maxHeight = this.options.image.naturalHeight;
+      }
+      else { // calculating here based on display size and using set cropbox on main
+        this.maxWidth = this.options.displaySize.width;
+        this.maxHeight = this.options.displaySize.height;
+      }
     }
 
    /**
@@ -36,35 +68,170 @@
     */
     async _init() {
       console.log('initializing face bounds');
-      const faceapi = window.faceapi;
-      // load the model for face-api
-      if(!faceapi.nets.tinyFaceDetector.isLoaded){
-        let url = 'static/build/manualAdds/';
-        await faceapi.nets.tinyFaceDetector.loadFromUri(url);
-      }
-
+      // check if model loaded for face-api
+      await loadModel();
       // call detect the faces (this takes the longest)
       const detections = await faceapi.detectAllFaces(this.options.image, new faceapi.TinyFaceDetectorOptions());
-      // resize the detected boxes in case your displayed image has a different size than the original
-      const resizedDetections = faceapi.resizeResults(detections, this.displaySize);
+
+      // resize the detected boxes in case displayed image has a different size than the original
+      // there are 3 different sizes to consider (original, cropper zoomed, and the container display)
+      let finalDetections;
+      let method = "_getFaceArea";
+      if(this.options.zoomedDetections){
+        finalDetections = faceapi.resizeResults(detections, this.options.zoomedSize);
+        method = "_getFaceArea2";
+      }
+      else if(this.options.useOriginal){
+        finalDetections = detections;
+      }
+      else {
+        finalDetections = faceapi.resizeResults(detections, this.options.displaySize);
+      }
+
       // get the face bounds
-      const faceBounds = this._getFaceArea(resizedDetections);
+      const faceBounds = this[method](finalDetections);
       // get the crop bounds
       return this._getAutoCropBounds(faceBounds);
 
     } // end init
+
+    _getFaceArea(detections){
+      // get the data for cropper
+      console.log('getting the face area');
+      let x = this.maxWidth;
+      let y = this.maxHeight;
+      let bounds = {
+        x: x,
+        y: y,
+        x_max: 0,
+        y_max: 0,
+        get w() { return this.x_max - this.x },
+        get h() { return this.y_max - this.y },
+      };
+
+      if(detections.length){
+        console.log(`${detections.length} faces found!`);
+        for (let i = 0; i < detections.length; i++) {
+          // the docs don't have anything on just returning the location?
+          // maybe look into that method that returns a canvas of the face????
+          let face = detections[i]._box;
+
+          let x = face._x;
+          let y = face._y;
+          // console.log(`face-${i} coords: (${x}, ${y})`);
+          let x_max = x + face._width;
+          let y_max = y + face._height;
+
+          bounds.x = Math.min(bounds.x, x);
+          bounds.y = Math.min(bounds.y, y);
+          bounds.x_max = Math.max(bounds.x_max, x_max);
+          bounds.y_max = Math.max(bounds.y_max, y_max);
+        }
+        return bounds;
+      }
+      return false;
+    }
+
+    /**
+     * calculations necessary to get the new crop area bounds based on received
+     * detected face bounds
+     * @param  {[object]} facebounds [x, y, w, h] of the detected face location
+     * @return {[object]}            [top or y, left or x, width, height] of the new cropping area bounds
+     */
+    _getAutoCropBounds(facebounds) {
+      // no faces detected
+      if(!facebounds){
+        console.log('no faces detected');
+        return false;
+      }
+      // get the values for the merged faces calculated bounds
+      const {w, h, x, y} = facebounds;
+      // get aspect ratio
+      const ar = this.options.aspectRatio;
+
+      // final dimensions
+      let outputHeight = h;
+      let outputWidth = outputHeight * ar;
+      // make sure using as much from found faces as possible
+      if(outputWidth < w){
+        outputWidth = w;
+        outputHeight = outputWidth / ar;
+        // make sure new height does not exceed original image height
+        if(outputHeight > this.maxHeight){
+          outputHeight = this.maxHeight;
+          outputWidth = outputHeight * ar;
+        }
+      }
+
+      // center bounds in image as much as possible
+      let outputX = Math.max(0, (x - (outputWidth - w) * 0.5));
+      let outputY = Math.max(0, (y - (outputHeight - h) * 0.5));
+
+
+      // dictionary formatted specifically for cropper
+      let cdata = {
+        left: outputX,
+        top: outputY,
+        width: outputWidth,
+        height: outputHeight,
+      };
+
+
+
+      // add padding around face box
+      // const p = 0; // .08;
+      // const padding = Math.ceil(Math.min(outputWidth, outputHeight) * p);
+      //
+      // let paddedWidth = outputWidth + padding;
+      // let paddedHeight = outputHeight + padding;
+      // // make sure padding doesn't make the area exceed original image
+      // let usePadding = (paddedWidth <= this.options.displaySize.width && paddedHeight <= this.options.displaySize.height);
+      //
+      // let cdata;
+      // if(usePadding) {
+      //   cdata = {
+      //     left: Math.max(0, (outputX - padding)),
+      //     top: Math.max(0, (outputY - padding)),
+      //     width: paddedWidth,
+      //     height: paddedHeight,
+      //   };
+      // }
+
+      console.table({
+        'x, y': [x, y],
+        'face': [w, h],
+        'imag': [this.options.displaySize.width, this.options.displaySize.height],
+        'n xy': [outputX, outputY],
+        'finl': [outputWidth, outputHeight],
+        'r XY': [cdata.left, cdata.top],
+        'r WH': [cdata.width, cdata.height]
+      });
+
+      // left and top is for set crop box
+      // x and y is for set data
+      if(this.options.useOriginal) {
+        cdata.x = cdata.left;
+        cdata.y = cdata.top;
+
+        delete cdata.left;
+        delete cdata.top;
+      }
+
+      return cdata;
+    } // end get crop area
 
     /**
      * gets one box dimension from the array of boxes (face detections)
      * @param  {[array]} resizedDetections [the resized face detection array]
      * @return {[object]}                   [x, y, w, h that contains all faces]
      */
-    _getFaceArea(resizedDetections) {
+    _getFaceArea2(resizedDetections) {
       // get the data for cropper
-      console.log('init.2 - getting the face area');
-      let x = this.displaySize.width;
-      let y = this. displaySize.height;
-      var bounds = {
+      console.log('getting the face area');
+      let x = this.maxWidth;
+      let y = this.maxHeight;
+
+      let bounds = {
         x: x,
         y: y,
         x_max: 0,
@@ -74,13 +241,21 @@
       };
 
       if(resizedDetections.length){
-        for (var i = 0; i < resizedDetections.length; i++) {
+        console.log(`${resizedDetections.length} faces found!`);
+        let left = 0, top = 0;
+        // the image is resized, but overflowing the container, so get the left and top amount to adjust
+        if(this.options.zoomedDetections){
+          left = this.options.zoomedPosition.left;
+          top = this.options.zoomedPosition.top;
+        }
+        for (let i = 0; i < resizedDetections.length; i++) {
           // the docs don't have anything on just returning the location?
           // maybe look into that method that returns a canvas of the face????
           let face = resizedDetections[i]._box;
 
-          let x = face._x;
-          let y = face._y;
+          let x = face._x + left;
+          let y = face._y + top;
+          // console.log(`face-${i} coords: (${x}, ${y})`);
           let x_max = x + face._width;
           let y_max = y + face._height;
 
@@ -94,76 +269,8 @@
       return false
     } // end get face area
 
-    //
-    /**
-     * calculations necessary to get the new crop area bounds based on received
-     * detected face bounds
-     * @param  {[object]} facebounds [x, y, w, h] of the detected face location
-     * @return {[object]}            [top, left, width, height] of the new cropping area bounds
-     */
-
-    _getAutoCropBounds(facebounds) {
-      console.log('init.3 crop bounds');
-      // no faces detected
-      if(!facebounds){
-        console.log('no faces detected');
-        return false
-      }
-      const {w , h, x, y} = facebounds;
-      // get aspect ratio
-      const ar = this.options.aspectRatio;
-      // new values
-      var nw = 0;
-      var nh = 0;
-      // get the width and height to contain the faces and meet aspect ratio
-      // x is the long side
-      if(ar != 1){ // not a square mosaic
-        // h == 1
-        nw = h * ar;
-        if(nw < w){
-          // w == 1
-          nh = w / ar;
-          nw = w;
-        }
-        else { nh = h; }
-      }
-      else { // square mosaic
-        nw = nh = Math.max(w, h);
-      }
-
-      this.cutOff = nw > this.displaySize.width || nh > this.displaySize.height;
-      if(this.cutOff){console.warn('calculated side larger than image bounds');}
 
 
-      // adjust faces to fit in the middle of the containment bounds
-      const nx = this._centerFaceBox(nw, w, x);
-      const ny = this._centerFaceBox(nh, h, y);
-
-      // add padding around face box
-      const p = .08;
-      const padding = Math.ceil(Math.min(nw, nh) * p);
-      // dictionary formatted specifically for cropper
-      const cdata = {
-        left: Math.max(0, (nx - padding)),
-        top: Math.max(0, (ny - padding)),
-        width: Math.min(this.displaySize.width, (nw + padding)),
-        height: Math.min(this.displaySize.height, (nh + padding)),
-      };
-
-      return cdata
-    } // end get crop area
-
-    /**
-     * calculations necessary to place the face area inside the crop area center
-     * @param  {[number]} border [the crop side length]
-     * @param  {[number]} center [the face side length]
-     * @param  {[number]} oldPos [the origin coordinate]
-     * @return {[number]}        [the new coordinate]
-     */
-    _centerFaceBox(border, center, oldPos) {
-      const move = (border - center) / 2;
-      return Math.max(0, (oldPos - move))
-    }
 
   } // end class
 

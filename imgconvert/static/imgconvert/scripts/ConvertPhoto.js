@@ -37,7 +37,7 @@
   };
   class ConvertPhoto {
     constructor(options){
-      console.log(' - calling convert - ');
+      console.log(' - initializing convert - ');
       if (!options.canvas) {
         throw new Error('canvas options not passed!');
       }
@@ -340,19 +340,24 @@
       const h = this.options.tilesY;
       const canvas = this.options.canvas;
       // shrink canvas and convert color
-      if(canvas.width != w || canvas.height != h){ this.resample_single(); }
+      if(canvas.width != w || canvas.height != h){
+        console.log('%c using canvas downsample', 'color:brown;');
+        this.resample_single(); }
       else { // already shrunk just convert color
+        console.log('%c preshrunk','color:green;');
         let ctx = canvas.getContext('2d');
         let imda = ctx.getImageData(0, 0, canvas.width, canvas.height);
         // match  & store colors
         this.mosaicColorData = this.convertColor(imda).data;
       }
+
       // get output info
       const mosaicCanvas = document.createElement('canvas');
       const mosaicContext = mosaicCanvas.getContext('2d');
       mosaicCanvas.width = w * s;
       mosaicCanvas.height = h * s;
 
+      this.forCheck = [];
       const plateBorders = this.getCaps();
       // iterate through to get tiles
       for (var i = 0; i < h; i++) {
@@ -373,6 +378,8 @@
           // output tile to canvas
           mosaicContext.fillStyle = 'rgb('+ color[0] +','+ color[1] +','+ color[2] +','+ color[3]/255 +')';
           mosaicContext.fillRect((j * s) , (i * s), s, s);
+          this.forCheck.push(color[0], color[1], color[2], color[3]);
+
 
           // // stroke each tile
           // mosaicContext.stroke = 'rgba(255, 255, 255, 255)';
@@ -510,6 +517,33 @@
 
       return data;
     };
+
+    checkDiff(list, toTest=this.forCheck){
+      if(this.options.methodname != 'createTiles'){throw new Error('this only works for createTiles');}
+      // let missing = [57, 255, 20, 255];
+      if(!toTest || !Array.isArray(toTest)){ throw new Error('stored mosaicColorData was abscent or invaliud'); }
+      let check = [];
+      for (let j=0; j<list.length; j++){
+        let mosaic = list[j];
+        let len = mosaic.length;
+        check[j] = 0;
+        if(toTest.length == len){
+          for (let i=0; i<len; i+=12){
+            let listPixel ='';
+            let thisPixel='';
+            for(let k=i; k<i+12; k+=4){
+              listPixel += mosaic[k] + '' + mosaic[k+1] + '' + mosaic[k+2]+ '' + mosaic[k+3];
+              thisPixel += toTest[k]+ '' + toTest[k+1]+ '' + toTest[k+2]+ '' +toTest[k+3];
+            }
+            if (thisPixel != listPixel){ check[j]++; }
+          }
+        }
+        else{check[j] = len/4;}
+      }
+
+      return check;
+
+    }
 
 
     getBillOfMaterials(){

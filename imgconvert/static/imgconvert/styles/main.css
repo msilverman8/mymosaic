@@ -1,6 +1,24 @@
-.display-row, .img-container {
-  border: 1px solid black;
+/* bootstrap alterations */
+
+/* changed this because plate size dropdowns were too large */
+.dropdown-menu {
+  min-width: 0;
 }
+/* changed this for hiding the default input file browser style and replacing it with a label removed the pointer cursor */
+label {
+  cursor: pointer;
+}
+
+/* custom css */
+
+.nav {
+  height: 3rem;
+}
+
+.step-container {
+  min-height: calc(100vh - 3rem);
+}
+
 
 /* notes from cropperjs */
 /* Ensure the size of the image fit the container perfectly (cropperjs) */
@@ -9,16 +27,53 @@
   width: 100%;
   /* This rule is very important, please don't ignore this (cropperjs) */
   max-width: 100%;
-  /* height: 400px; */
+  height: 100%;
+}
+    .img-container {
+      border: 1px solid black;
+    }
+
+.btn-checkbox {
+  width: 28px;
+  height: 28px;
+  background-color: white;
+  box-shadow: 0 0 0 1px black;
+}
+  :checked + .btn-checkbox::before {
+    content: "X";
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+  }
+
+.btn-bg {
+  height: 88px;
+  width: 88px;
+  border: 1px solid black;
+}
+
+.btn-palette-color {
+  position: relative;
+  height: 32px;
+  width: 32px;
+  margin: .25rem;
+  border: .25rem solid white;
+  box-shadow: 0 0 0 1px black;
+}
+    .btn-palette-color:not(.active)::before {
+        content: "X";
+        color: white;
+        position: absolute;
+        left:0; top:0; right: 0; bottom: 0;
+        background-color: rgba(0,0,0,.1);
+    }
+
+.dropdown-divider-vertical {
+    width: 0;
+    margin: 0 .5rem;
+    overflow: hidden;
+    border-left: 1px solid #e9ecef;
 }
 
 #containerResult {
-  /* overflow: hidden; */
-  /* height: 300px; */
-}
-
-.sample-colors {
-  display: inline-block;
-  height: 50px;
-  width: 50px;
+  /* min-height: 700px; */
 }

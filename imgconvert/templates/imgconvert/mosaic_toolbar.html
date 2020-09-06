@@ -1,0 +1,37 @@
+{# toolbar for the adjust mosaic step #}
+
+<div class="btn-toolbar justify-content-around mb-2" role="toolbar" aria-label="Toolbar with button groups">
+
+  <div class="btn-group">
+    <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#paletteCollapse">Palette</button>
+  </div>
+
+  <div class="btn-group">
+    <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#slidersCollapse">Tweak Results</button>
+  </div>
+
+  <div class="input-group" id="removeBgGroup">
+    <div class="input-group-prepend">
+      <div class="input-group-text">
+        <input type="checkbox" class="d-none" id="useRemoveBG">
+        <label for="useRemoveBG" class="btn btn-checkbox mb-0"></label>
+      </div>
+    </div>
+    <button id="removeBG" class="btn btn-secondary rounded-right" type="button" data-toggle="collapse" data-target="#bgCollapse" disabled>Remove BG</button>
+  </div>
+
+</div> <!--end button toolbar-->
+
+<div class="row" id="toolsDropdown">
+  {% for item in view.mosaic_tools.mosaicTools %}
+    <div class="collapse w-100" id="{{item}}Collapse" data-parent="#toolsDropdown">
+      <div class="card card-body">
+        {% with "imgconvert/tool_"|add:item|add:"_content.html" as template %}
+          {% include template %}
+        {% endwith %}
+      </div>
+    </div>
+  {% endfor %}
+
+
+</div>
