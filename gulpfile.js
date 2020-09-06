@@ -49,7 +49,7 @@ function clean(done) {
 // js locations
 const jsFOLDER = 'scripts/';
 const jsSRC = appGLOB + jsFOLDER;
-const jsFILES = ['main.js', 'camanProcess.js'];
+const jsFILES = ['main.js'];
 const jsDEST = buildDIR + jsFOLDER;
 
 function js(done) {
@@ -98,7 +98,6 @@ const vendorLIST = [
   // 'ditherjs/dist/ditherjs.dist.js',
   'face-api.js/dist/face-api.min.js',
   'face-api.js/dist/face-api.js.map',
-
 ];
 const vendorDEST = buildDIR + 'vendor/';
 

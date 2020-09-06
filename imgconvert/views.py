@@ -43,12 +43,13 @@ class Index(TemplateView):
                 'color': '255,255,255',  # the default color for the default pattern
             },
             'palette': COLOR_KEYS.color,  # the default palette selected from this color_data
+            'plateCount': 2,  # the default plate count value
         }
 
     def mosaic_tools(self):
         r = {
             'mosaicTools': ["palette", "sliders", "bg"],  # the user settings for the mosaic
-            'plateCount': range(1, 4),  # the min and max of the plates allowed on a single side of the mosaic
+            'plateCount': range(2, 4),  # the min and max of the plates allowed on a single side of the mosaic
             'bgPattern': {  # key is the pattern name, value is the amount of colors the pattern needs
                 'burst': 2,
                 'solid': 1,

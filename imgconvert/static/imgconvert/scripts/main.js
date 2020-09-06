@@ -461,44 +461,75 @@ import RawImage from './RawImage.js';
   // }
 
   function getdisplayCrop(){
+    // wrapper -
+    let wrapper = CROPPER.getCanvasData();
+    // console.log('%c wrapper', 'color:orange;');
+    // console.table(wrapper);
+    // let imgData = CROPPER.getImageData();
+    // console.log('%c img data', 'color:orange;');
+    // console.table(imgData);
     // store current data
     let stored = CROPPER.getData();
-    let {width, height} = CROPPER.getContainerData();
+    // console.log('%c Data', 'color:orange;');
+    // console.table(stored);
+    // container - the div that the image is uploaded to, overflow is set to hidden
+    let cd = CROPPER.getContainerData();
+    // console.log('%c container data', 'color:orange;');
+    // console.table(cd);
+    let fullCrop = {};
+
+
+    // get the full visible area of the image as a cropped region
+    let wrapperWidth = wrapper.width + wrapper.left;
+    if (wrapper.left < 0){
+      fullCrop.left = 0;
+      fullCrop.width = ( wrapperWidth > cd.width ) ? cd.width : wrapperWidth;
+    }
+    else {
+      fullCrop.left = wrapper.left;
+      fullCrop.width = ( wrapperWidth > cd.width ) ? (cd.width - fullCrop.left) : wrapper.width;
+    }
+
+    let wrapperHeight = wrapper.height + wrapper.top;
+    if ( wrapper.top < 0 ){
+      fullCrop.top = 0;
+      fullCrop.height = ( wrapperHeight > cd.height ) ? cd.height : wrapperHeight;
+    }
+    else {
+      fullCrop.top = wrapper.top;
+      fullCrop.height = ( wrapperHeight > cd.height ) ? (cd.height - wrapper.top) : wrapper.height;
+    }
+
+
+
     // console.log(`width: ${width}, height: ${height}`);
     // set triggers crop event which converts crop area to mosaic, which is unwanted right now
     UPLOADED_IMAGE.callOnCrop = false;
     // change the aspect ratio to get the full display image
-    CROPPER.setAspectRatio(width/height);
+    CROPPER.setAspectRatio(fullCrop.width/fullCrop.height);
 
     // set triggers crop event which converts crop area to mosaic, which is unwanted right now
     UPLOADED_IMAGE.callOnCrop = false;
     // get the canvas of the entire displayed area
-    let getFull = CROPPER.setCropBoxData({
-      left: 0,
-      right: 0,
-      width: width,
-      height: height
-    });
+    let getFull = CROPPER.setCropBoxData(fullCrop);
 
-    let natDime = CROPPER.getData();
-    // console.table(natDime);
-    let ar = (width / height);
     let defaults = {
-      width: width,
-      height: height,
-      maxWidth: width,
-      maxHeight: height,
-      minWidth: width,
-      minHeight: height,
+      width: fullCrop.width,
+      height: fullCrop.height,
+      maxWidth: fullCrop.width,
+      maxHeight: fullCrop.height,
+      minWidth: fullCrop.width,
+      minHeight: fullCrop.height,
       fillColor: '#fff',
     };
 
 
-    // for some reason the above options clip the alpha space out of the returned canvas, seding over the incorect image to autoface
+    // for some reason the above options clip the alpha space out of the returned canvas, seding over the incorrect image to autoface
     // use this if rotated, will have to manually adjust for zoom tho
+    let ar = (fullCrop.width / fullCrop.height);
     let rotate = {
-      width: width,
-      height: height,
+      width: fullCrop.width,
+      height: fullCrop.height,
       maxWidth: 4096,
       maxHeight: 4096 / ar,
       minWidth: ar,
@@ -506,13 +537,17 @@ import RawImage from './RawImage.js';
       fillColor: '#fff',
     };
 
-    let ops = natDime.rotate != 0 ? rotate : defaults;
-
-    console.log((natDime.rotate != 0) + ' - ' + typeof natDime.rotate);
-    console.table(ops);
+    let ops = stored.rotate != 0 ? rotate : defaults;
+    // let ops = defaults;
+    // console.log((stored.rotate != 0) + ' - ' + typeof stored.rotate);
+    // console.table(ops);
 
     // get the canvas
     let canvas = CROPPER.getCroppedCanvas(ops);
+
+
+    // test if left top 0 aligns with the container or the wrapper
+    // return canvas;
 
     // set triggers crop event which converts crop area to mosaic, which is unwanted right now
     UPLOADED_IMAGE.callOnCrop = false;
@@ -527,6 +562,13 @@ import RawImage from './RawImage.js';
     return canvas;
   }
 
+  function devDisplaySentToAutoFace(image, str, clear){
+    console.log(str);
+    let container = document.getElementById('devImageResult');
+    if(clear){ container.innerHTML = ''; }
+    container.appendChild(image);
+  }
+
 
   // gets a snap of the whole display area in case of image transformations,
   // this sends the transformed image to autoface, instead of the default uploaded image
@@ -536,12 +578,15 @@ import RawImage from './RawImage.js';
       // get snap of entire visible image in the display
       let canvas = getdisplayCrop();
       canvas.toBlob(function(blob) {
-        let newImg = new Image();
+        let newImg = document.createElement('img');
         let url = URL.createObjectURL(blob);
         newImg.src = url;
+        // for dev, display the image that was sent to confirm the section was grabbed correctly
+        devDisplaySentToAutoFace(newImg, 'called from getImageForAutoFace', true);
 
         newImg.onload = function() {
-
+          // return;
+          // send transformed display to autoface to find face
           useAutoFace({
             image: newImg,
             useOriginal:false,
@@ -572,6 +617,11 @@ import RawImage from './RawImage.js';
     let ops = defaults;
     if( options && typeof options == "object"){ ops = Object.assign({}, defaults, options); }
 
+    console.log(ops.image);
+
+    // for dev display image that was sent to autoface to confirm it is correct
+    devDisplaySentToAutoFace(ops.image, 'called from AutoFace promise return', false);
+
     // get the bounds of the faceapi calculated to the passed aspect ratio
     new AutoFace(ops).results
       .then(resp => {
@@ -594,6 +644,7 @@ import RawImage from './RawImage.js';
         else {  // face api found no faces handle this
           console.warn('face api returned some falsey value');
         }
+
       })
       .catch(err=>{console.warn(err)});
   }
@@ -938,7 +989,7 @@ function ditherResult(canvas, options){
   let ctx = canvas.getContext('2d');
   ctx.putImageData(handleUnit8Array(canvas, output), 0, 0);
 
-  return canvas
+  return canvas;
 
 }
 
@@ -950,7 +1001,7 @@ function handleUnit8Array(canvas, arry) {
       imageData.data[i+2] = arry[i+2];
       imageData.data[i+3] = arry[i+3];
   }
-  return imageData
+  return imageData;
 }
 
 // clear sliders,

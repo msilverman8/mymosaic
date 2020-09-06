@@ -2,7 +2,7 @@
     <button id="plateTarget{{ type }}" type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown"> 2 </button>
       <div class="dropdown-menu">
         {% for i in view.mosaic_tools.plateCount %}
-          <a href="#" class="dropdown-item {% if i == 2 %}active{% endif %}" data-main="globals" data-method="plate{{ type }}" data-option="{{ i }}" data-effects="plateTarget{{ type }}-dropdown">{{ i }}</a>
+          <a href="#" class="dropdown-item {% if i == view.default_values.plateCount %}active{% endif %}" data-main="globals" data-method="plate{{ type }}" data-option="{{ i }}" data-effects="plateTarget{{ type }}-dropdown">{{ i }}</a>
         {% endfor %}
       </div>
 </div>

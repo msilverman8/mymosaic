@@ -1877,55 +1877,81 @@ var Globals = require('./globals.js');
 
 
   function getdisplayCrop() {
+    // wrapper -
+    var wrapper = CROPPER.getCanvasData(); // console.log('%c wrapper', 'color:orange;');
+    // console.table(wrapper);
+    // let imgData = CROPPER.getImageData();
+    // console.log('%c img data', 'color:orange;');
+    // console.table(imgData);
     // store current data
-    var stored = CROPPER.getData();
 
-    var _CROPPER$getContainer = CROPPER.getContainerData(),
-        width = _CROPPER$getContainer.width,
-        height = _CROPPER$getContainer.height; // console.log(`width: ${width}, height: ${height}`);
+    var stored = CROPPER.getData(); // console.log('%c Data', 'color:orange;');
+    // console.table(stored);
+    // container - the div that the image is uploaded to, overflow is set to hidden
+
+    var cd = CROPPER.getContainerData(); // console.log('%c container data', 'color:orange;');
+    // console.table(cd);
+
+    var fullCrop = {}; // get the full visible area of the image as a cropped region
+
+    var wrapperWidth = wrapper.width + wrapper.left;
+
+    if (wrapper.left < 0) {
+      fullCrop.left = 0;
+      fullCrop.width = wrapperWidth > cd.width ? cd.width : wrapperWidth;
+    } else {
+      fullCrop.left = wrapper.left;
+      fullCrop.width = wrapperWidth > cd.width ? cd.width - fullCrop.left : wrapper.width;
+    }
+
+    var wrapperHeight = wrapper.height + wrapper.top;
+
+    if (wrapper.top < 0) {
+      fullCrop.top = 0;
+      fullCrop.height = wrapperHeight > cd.height ? cd.height : wrapperHeight;
+    } else {
+      fullCrop.top = wrapper.top;
+      fullCrop.height = wrapperHeight > cd.height ? cd.height - wrapper.top : wrapper.height;
+    } // console.log(`width: ${width}, height: ${height}`);
     // set triggers crop event which converts crop area to mosaic, which is unwanted right now
 
 
     UPLOADED_IMAGE.callOnCrop = false; // change the aspect ratio to get the full display image
 
-    CROPPER.setAspectRatio(width / height); // set triggers crop event which converts crop area to mosaic, which is unwanted right now
+    CROPPER.setAspectRatio(fullCrop.width / fullCrop.height); // set triggers crop event which converts crop area to mosaic, which is unwanted right now
 
     UPLOADED_IMAGE.callOnCrop = false; // get the canvas of the entire displayed area
 
-    var getFull = CROPPER.setCropBoxData({
-      left: 0,
-      right: 0,
-      width: width,
-      height: height
-    });
-    var natDime = CROPPER.getData(); // console.table(natDime);
-
-    var ar = width / height;
+    var getFull = CROPPER.setCropBoxData(fullCrop);
     var defaults = {
-      width: width,
-      height: height,
-      maxWidth: width,
-      maxHeight: height,
-      minWidth: width,
-      minHeight: height,
+      width: fullCrop.width,
+      height: fullCrop.height,
+      maxWidth: fullCrop.width,
+      maxHeight: fullCrop.height,
+      minWidth: fullCrop.width,
+      minHeight: fullCrop.height,
       fillColor: '#fff'
-    }; // for some reason the above options clip the alpha space out of the returned canvas, seding over the incorect image to autoface
+    }; // for some reason the above options clip the alpha space out of the returned canvas, seding over the incorrect image to autoface
     // use this if rotated, will have to manually adjust for zoom tho
 
+    var ar = fullCrop.width / fullCrop.height;
     var rotate = {
-      width: width,
-      height: height,
+      width: fullCrop.width,
+      height: fullCrop.height,
       maxWidth: 4096,
       maxHeight: 4096 / ar,
       minWidth: ar,
       minHeight: 1,
       fillColor: '#fff'
     };
-    var ops = natDime.rotate != 0 ? rotate : defaults;
-    console.log((natDime.rotate != 0) + ' - ' + (0, _typeof2["default"])(natDime.rotate));
-    console.table(ops); // get the canvas
+    var ops = stored.rotate != 0 ? rotate : defaults; // let ops = defaults;
+    // console.log((stored.rotate != 0) + ' - ' + typeof stored.rotate);
+    // console.table(ops);
+    // get the canvas
 
-    var canvas = CROPPER.getCroppedCanvas(ops); // set triggers crop event which converts crop area to mosaic, which is unwanted right now
+    var canvas = CROPPER.getCroppedCanvas(ops); // test if left top 0 aligns with the container or the wrapper
+    // return canvas;
+    // set triggers crop event which converts crop area to mosaic, which is unwanted right now
 
     UPLOADED_IMAGE.callOnCrop = false; // restore aspect ratio
 
@@ -1935,6 +1961,17 @@ var Globals = require('./globals.js');
 
     CROPPER.setData(stored);
     return canvas;
+  }
+
+  function devDisplaySentToAutoFace(image, str, clear) {
+    console.log(str);
+    var container = document.getElementById('devImageResult');
+
+    if (clear) {
+      container.innerHTML = '';
+    }
+
+    container.appendChild(image);
   } // gets a snap of the whole display area in case of image transformations,
   // this sends the transformed image to autoface, instead of the default uploaded image
 
@@ -1947,11 +1984,15 @@ var Globals = require('./globals.js');
 
     var canvas = getdisplayCrop();
     canvas.toBlob(function (blob) {
-      var newImg = new Image();
+      var newImg = document.createElement('img');
       var url = URL.createObjectURL(blob);
-      newImg.src = url;
+      newImg.src = url; // for dev, display the image that was sent to confirm the section was grabbed correctly
+
+      devDisplaySentToAutoFace(newImg, 'called from getImageForAutoFace', true);
 
       newImg.onload = function () {
+        // return;
+        // send transformed display to autoface to find face
         useAutoFace({
           image: newImg,
           useOriginal: false,
@@ -1979,8 +2020,11 @@ var Globals = require('./globals.js');
 
     if (options && (0, _typeof2["default"])(options) == "object") {
       ops = Object.assign({}, defaults, options);
-    } // get the bounds of the faceapi calculated to the passed aspect ratio
+    }
 
+    console.log(ops.image); // for dev display image that was sent to autoface to confirm it is correct
+
+    devDisplaySentToAutoFace(ops.image, 'called from AutoFace promise return', false); // get the bounds of the faceapi calculated to the passed aspect ratio
 
     new _AutoFace["default"](ops).results.then(function (resp) {
       console.log('-- autoface promise returned ---');
