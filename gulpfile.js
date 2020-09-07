@@ -92,7 +92,7 @@ function js(done) {
 const vendorSRC = './node_modules/';
 const commonDIR = ''
 const vendorLIST = [
-  'caman/dist/caman.min.js',
+  'caman/dist/caman.full.min.js',
   'cropperjs/dist/cropper.min.css',
   'cropperjs/dist/cropper.min.js',
   // 'ditherjs/dist/ditherjs.dist.js',

@@ -54,29 +54,47 @@ class Index(TemplateView):
                 'burst': 2,
                 'solid': 1,
             },
+            'presetList': {
+                'clarity': 'auto',
+                'hazyDays': 'soft glow',
+                'glowingSun': 'lighten',
+            },
             'sliderList': {
-                'brightness': {
-                    'range': [-100, 100],  # [-100, 100]
-                    'step': 1,
-                    'initialValue': 0,
-                },
+                # 'brightness': {
+                #     'range': [-50, 50],  # [-100, 100]
+                #     'step': 1,
+                #     'initialValue': 0,
+                # },
                 # 'contrast': {  # looks like butt
                 #     'range': [-10, 10],  # [-100, 100]
                 #     'step': 1,
                 #     'initialValue': 0,
                 # },
-                'gamma': {
-                    'range': [0, 5],  # 0 - infinity 0-1 lessen contrast, 1+ will increase contrast
-                    'step': 0.1,
-                    'initialValue': 1,
-                },
+                # 'gamma': {
+                #     'range': [0, 5],  # 0 - infinity 0-1 lessen contrast, 1+ will increase contrast
+                #     'step': 0.1,
+                #     'initialValue': 1,
+                # },
                 'exposure': {   # based on curves ( adjust color values based on a bezier curve )
                     'range': [-100, 100],  # [-100, 100]
                     'step': 1,
                     'initialValue': 0,
+                    'label': 'brightness',
                 },
                 'vibrance': {  # a smart saturation tool, boosts less saturated color more than saturated colors
                     'range': [-100, 100],  # [-100, 100]
+                    'step': 1,
+                    'initialValue': 0,
+                    'label': 'color vibrance',
+                },
+                'stackBlur': {  # blurs an image
+                    'range': [0, 20],
+                    'step': 1,
+                    'initialValue': 0,
+                    'label': 'soften',
+                },
+                'sharpen': {  # sharpens the image
+                    'range': [0, 100],
                     'step': 1,
                     'initialValue': 0,
                 },

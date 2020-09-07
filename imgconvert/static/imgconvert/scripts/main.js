@@ -20,12 +20,16 @@ import RawImage from './RawImage.js';
     try {
       const cd = JSON.parse(document.getElementById(jsonValueID).textContent);
       Globals.colorData = cd;
-      Globals.color = 'CL';
+      Globals.color = 'CL'; // should get the value from the ciews template defaults value
       Globals.resetPalette();
       // for dev
       displayPalette();
     }
     catch(e) {console.warn(e)}
+
+    // initialize the bg pattern / any other globals defaults here, get the defaults from django views
+    Globals.bgPattern = 'solid';
+
   })();
 
   // cropper variables
@@ -34,7 +38,7 @@ import RawImage from './RawImage.js';
       CONTAINER_RESULT = document.getElementById('containerResult'),      // parent of mosaic display
       PREVIEW_RESULT = document.getElementById('previewResult'),          // preview container
       SLIDER_CROPPED = document.getElementById('previewSliderResult'),    // preview the cropped non-tiled section w/ slider tweaks
-      UPLOADED_IMAGE,
+      UPLOADED_IMAGE = new RawImage('none'),
       ALL_UPLOADS = [],
       // options for the cropper object
       DISPLAY_MOSAICS = function (options) {
@@ -78,8 +82,8 @@ import RawImage from './RawImage.js';
         aspectRatio: Globals.aspectRatio,
         viewMode: 2,
         ready: DEFAULT_READY,
-        // autoCrop: false,
-        autoCropArea: 0,
+        autoCrop: false,
+        autoCropArea: .01,
         zoomOnWheel: false,
         zoomOnTouch: false,
         cropstart: function (e) {
@@ -113,7 +117,8 @@ import RawImage from './RawImage.js';
 
           // when window is resized
           let {naturalWidth, width} = CROPPER.getImageData();
-          UPLOADED_IMAGE.scaleFactor = naturalWidth / width;
+          // bad math fix this
+          // UPLOADED_IMAGE.scaleFactor = naturalWidth / width;
 
 
 
@@ -121,7 +126,8 @@ import RawImage from './RawImage.js';
           // && CROPPER.setData() is called sometimes? )
           if(UPLOADED_IMAGE.callOnCrop){
             let str = 'from crop';
-            DISPLAY_MOSAICS(str); }
+            DISPLAY_MOSAICS(str);
+          }
           UPLOADED_IMAGE.callOnCrop = true;
 
         },
@@ -137,59 +143,59 @@ import RawImage from './RawImage.js';
       // IMAGE_CROPPER_DATA = [CROPPER.getImageData()],
       // CANVAS_CROPPER_DATA = [CROPPER.getCanvasData()];
 
-  function getCropboxCenter() {
-    // get the center of the crop box to store as zoom to value
-    if(!CROPPER.cropped || !UPLOADED_IMAGE){ return; }
-
-    let cbd = CROPPER.getCropBoxData();
-    let {left, top, width, height} = cbd;
-    UPLOADED_IMAGE.cropboxCenter = {
-      x: left + (width * .5),
-      y: top + (height * .5),
-    }
-
-    console.log('-------------');
-    console.log('cropbox center');
-    console.table(UPLOADED_IMAGE.cropboxCenter);
-    console.log('-------------');
-
-    let wrapper = CROPPER.getCanvasData();
-    let image = CROPPER.getImageData();
-    let d = CROPPER.getData();
-    let c = CROPPER.getContainerData();
-
-    let table = [
-        ['name', 'x or left', 'y or top', 'width', 'height'],
-        ['data', d.x+'', d.y+'', d.width+'', d.height+''],
-        ['container', '','', c.width+'', c.height+''],
-    ];
-
-    let prevZoom = d.y - cbd.top;
-
-    console.log('data top '+d.y);
-    console.log('crop top '+cbd.top);
-    console.log('canv top '+wrapper.top);
-    console.log('crop * factor '+cbd.top*UPLOADED_IMAGE.scaleFactor);
-    console.log('d-c ', prevZoom);
-
-    // let table = [
-    //   ['name', 'x or left', 'y or top', 'width', 'height'],
-    //   ['cropbox', left+'', top+'', width+'', height+''],
-    //   ['wrapper', wrapper.left+'', wrapper.top+'', wrapper.width+'', wrapper.height+''],
-    //   ['image', image.left+'', image.top+'', image.width+'', image.height+''],
-    //   ['data', d.x+'', d.y+'', d.width+'', d.height+''],
-    // ];
-
-    // console.log('----    all together    ---');
-    // console.table(table);
-  }
+  // function getCropboxCenter() {
+  //   // get the center of the crop box to store as zoom to value
+  //   if(!CROPPER.cropped || !UPLOADED_IMAGE){ return; }
+  //
+  //   let cbd = CROPPER.getCropBoxData();
+  //   let {left, top, width, height} = cbd;
+  //   UPLOADED_IMAGE.cropboxCenter = {
+  //     x: left + (width * .5),
+  //     y: top + (height * .5),
+  //   }
+  //
+  //   console.log('-------------');
+  //   console.log('cropbox center');
+  //   console.table(UPLOADED_IMAGE.cropboxCenter);
+  //   console.log('-------------');
+  //
+  //   let wrapper = CROPPER.getCanvasData();
+  //   let image = CROPPER.getImageData();
+  //   let d = CROPPER.getData();
+  //   let c = CROPPER.getContainerData();
+  //
+  //   let table = [
+  //       ['name', 'x or left', 'y or top', 'width', 'height'],
+  //       ['data', d.x+'', d.y+'', d.width+'', d.height+''],
+  //       ['container', '','', c.width+'', c.height+''],
+  //   ];
+  //
+  //   let prevZoom = d.y - cbd.top;
+  //
+  //   console.log('data top '+d.y);
+  //   console.log('crop top '+cbd.top);
+  //   console.log('canv top '+wrapper.top);
+  //   console.log('crop * factor '+cbd.top*UPLOADED_IMAGE.scaleFactor);
+  //   console.log('d-c ', prevZoom);
+  //
+  //   // let table = [
+  //   //   ['name', 'x or left', 'y or top', 'width', 'height'],
+  //   //   ['cropbox', left+'', top+'', width+'', height+''],
+  //   //   ['wrapper', wrapper.left+'', wrapper.top+'', wrapper.width+'', wrapper.height+''],
+  //   //   ['image', image.left+'', image.top+'', image.width+'', image.height+''],
+  //   //   ['data', d.x+'', d.y+'', d.width+'', d.height+''],
+  //   // ];
+  //
+  //   // console.log('----    all together    ---');
+  //   // console.table(table);
+  // }
 
   // get a canvas of the region outlined by the cropbox
   function getCropperCanvas(options){
     // set maxWidth to not exceed the naturalWidth
     let boxD = CROPPER.getCropBoxData();
-    let maxWidth = boxD.width * UPLOADED_IMAGE.scaleFactor;
-    let maxHeight = boxD.height * UPLOADED_IMAGE.scaleFactor;
+    // let maxWidth = boxD.width * UPLOADED_IMAGE.scaleFactor;
+    // let maxHeight = boxD.height * UPLOADED_IMAGE.scaleFactor;
 
     let useOptions = (options && typeof options == 'object') ? true : false;
     console.log('---------------- cropper canvas extract ----------------------');
@@ -206,15 +212,14 @@ import RawImage from './RawImage.js';
       imageSmoothingQuality: 'high', // one of ['low', 'medium', 'high']
       maxWidth: 4096,
       maxHeight: 4096,
-      // fillColor: '#ccc', // set this value for default remove bg solid
-      // fillColorList: [],
-      // fillType: 'solid',
     };
     let ops = defaults;
 
     if(useOptions) { ops = Object.assign({}, defaults, options); }
     return CROPPER.getCroppedCanvas(ops);
   }
+
+
 
 
   // get options to sent to convert photo
@@ -232,13 +237,17 @@ import RawImage from './RawImage.js';
       targetElement: CONTAINER_RESULT,
       // the ontly readon this should change is on responsive window resize
       tileSize: Globals.tileSize,
-
     };
     let updateEveryCall = {
-      colorChoice: Globals.color,
-      palette: Globals.palette,
-      tilesX: Globals.x, // number of tiles in the x axis
-      tilesY: Globals.y, // number of tiles in the y axis
+      colorChoice: Globals.color,       // the key name for the palette a string
+      palette: Globals.palette,         // list of the color palette
+      tilesX: Globals.x,                // number of tiles in the x axis
+      tilesY: Globals.y,                // number of tiles in the y axis
+      // values below are only used if defaults useBG is true (remove bg is checked)
+      // whether or not to use the bg pattern
+      useBG: Globals.useBG,
+      fillColorList: Globals.bgColors,  // list of colors to use in the bg
+      fillPattern: Globals.bgPattern,      // string of the bg pattern type
     };
     let ops;
     if(useOptions){ ops = Object.assign({}, defaults, options, updateEveryCall); }
@@ -253,13 +262,14 @@ import RawImage from './RawImage.js';
       UPLOADED_IMAGE.moasicOptions = Object.assign({}, ops);
     }
 
-    // if filters have tweaked been applied, gotta apply them for this canvas
-    if(UPLOADED_IMAGE.applyFilters){
+    // if filters have been applied, gotta apply them for this canvas
+    // only apply filters to the result mosaic, not the preview
+    if(ops.targetElement == CONTAINER_RESULT && ( UPLOADED_IMAGE.applyFilters || UPLOADED_IMAGE.usePreset ) ){
       // called from updating the cropper box and not from filter adjust
       // gotta apply existing stored filters
       if(!options.hasOwnProperty('filterCanvas')){
         // regenerate canvas form new cropbox view, so canvas is null
-        applyFilters(null, function(resp){
+        applyFilters(function(resp){
           let ops = Object.assign({}, UPLOADED_IMAGE.moasicOptions, {canvas: resp} );
           callConversion(ops);
           // for dev see what the non-tiled canvas image looks like with the filters
@@ -290,6 +300,7 @@ import RawImage from './RawImage.js';
       delete UPLOADED_IMAGE.moasicOptions.filterCanvas;
     }
     // add to dom
+    console.log(`updating container: ${ops.targetElement.id}`);
     ops.targetElement.innerHTML = '';
     ops.targetElement.appendChild(mosaic);
   }
@@ -356,10 +367,11 @@ import RawImage from './RawImage.js';
 
   // listener for user uploaded image
   const IMAGE_INPUT = document.getElementById('importImage');
+  let uploadedImageURL;
   if (URL) {
     IMAGE_INPUT.onchange = function () {
-      var files = this.files;
-      var file;
+      let files = this.files;
+      let file;
 
       // make sure a file was uploaded
       if (files && files.length) {
@@ -367,26 +379,25 @@ import RawImage from './RawImage.js';
 
         // make sure it's an image file
         if (/^image\/\w+/.test(file.type)) {
-          console.log('file type');
-          // keep track of uploaded images for remove bg
-          let count = ALL_UPLOADS.length;
-          if(UPLOADED_IMAGE){
-            console.log(' user has previously uploaded an image ');
-            UPLOADED_IMAGE.cleanUP();
-
-          }
-          UPLOADED_IMAGE = new RawImage();
-          UPLOADED_IMAGE.handleImage({
-            windowURL: URL,
-            image: document.getElementById('imgUploaded'),
-            file: file,
-          });
-
+          // revoke previous if it exists
+          if (uploadedImageURL) { URL.revokeObjectURL(uploadedImageURL); }
           if(CROPPER) { CROPPER.destroy(); }
+
+          let image = document.createElement('img');
+          image.id = 'imgUploaded';
+          CONTAINER_UPLOADED.innerHTML = '';
+          CONTAINER_UPLOADED.appendChild(image);
+          image.src = uploadedImageURL = URL.createObjectURL(file);
+          UPLOADED_IMAGE = new RawImage(image);
+          SLIDER_CROPPED.innerHTML = '';
+          document.getElementById('devImageResult').innerHTML = '';
+
+
 
           // create new crop object tro load the image for detect face
           CROPPER_OPTIONS.ready = function(e){
             console.log('%c'+e.type,'color:green;');
+            CROPPER.crop();
             useAutoFace();
             UPLOADED_IMAGE.callOnCrop = true;
 
@@ -520,7 +531,6 @@ import RawImage from './RawImage.js';
       maxHeight: fullCrop.height,
       minWidth: fullCrop.width,
       minHeight: fullCrop.height,
-      fillColor: '#fff',
     };
 
 
@@ -534,7 +544,6 @@ import RawImage from './RawImage.js';
       maxHeight: 4096 / ar,
       minWidth: ar,
       minHeight: 1,
-      fillColor: '#fff',
     };
 
     let ops = stored.rotate != 0 ? rotate : defaults;
@@ -574,7 +583,7 @@ import RawImage from './RawImage.js';
   // this sends the transformed image to autoface, instead of the default uploaded image
   function getImageForAutoFace(options) {
 
-    if(!CROPPER.cropped){return;}
+    if(!CROPPER.cropped){ CROPPER.crop(); }
       // get snap of entire visible image in the display
       let canvas = getdisplayCrop();
       canvas.toBlob(function(blob) {
@@ -661,6 +670,7 @@ import RawImage from './RawImage.js';
 
     // have check enable / disable button
     btn.disabled = !this.checked;
+    Globals.useBG = this.checked;
 
     if(this.checked){ // if checked
       // checked if called remove bg yet
@@ -668,6 +678,9 @@ import RawImage from './RawImage.js';
     }
     //  if dropdown is open, close it
     else if( btnTarget.classList.contains(classname) ){ $(btnSelector).collapse('hide'); }
+
+    // call re-tile becuase background has changed
+    DISPLAY_MOSAICS();
   }
   // container for sliders input
   // document.getElementById('slidersContent').onchange = handleClicks;
@@ -723,6 +736,7 @@ import RawImage from './RawImage.js';
         let classname = 'active';
         let rgb = target.getAttribute('data-rgb') || undefined;
         if(rgb !== undefined){ target.classList.toggle(classname); }
+        updateMosaic = true;
 
         // updates the custom palette, add removes colors
         if(type == 'palette'){
@@ -748,8 +762,6 @@ import RawImage from './RawImage.js';
             let temp = Globals.bgColors.filter(stored => stored !== rgb);
             Globals.bgColors = temp;
           }
-          // update bg to use the new selected colors in the Globals.bgColors list
-          updateMosaic = true;
         }
 
         // changing the pattern of the removed background
@@ -769,8 +781,6 @@ import RawImage from './RawImage.js';
           }
         }
 
-        // needs some code for changing the bg and updating the mosaic display
-
         break;
       }
       // user is changing the crop of the image!!!
@@ -783,15 +793,39 @@ import RawImage from './RawImage.js';
 
         break;
       case 'caman':
+        // console.table(Object.keys(Caman.prototype));
+        // if no image uplaoded yet, cancel slider move and reset values
+        if(UPLOADED_IMAGE.image == 'none'){
+          UPLOADED_IMAGE.resetAllFilters();
+          break;
+        }
         // if reset, reset the slider
-        if(!UPLOADED_IMAGE || data.option == 'reset'){ document.getElementById(data.method+"Range").value = data.value; }
-        // if no image uplaoded yet, cancel slider move
-        if(!UPLOADED_IMAGE){ break; }
+        if(data.option == 'reset'){
+          document.getElementById(data.method+"Range").value = data.value;
+        }
 
-        // store slider value
-        UPLOADED_IMAGE.setFilterList(data.method, data.value);
+        // get preset bool
+        let preset = target.getAttribute('data-preset');
 
-        // apply filter to cropped canvas BUT apply it to a copy
+        // if reset all
+        if(data.method == 'reset'){
+          UPLOADED_IMAGE.usePreset = false;
+          UPLOADED_IMAGE.resetAllFilters();
+        }
+        else if(preset){ // a preset button hit
+          // reset all sliders
+          UPLOADED_IMAGE.resetAllFilters();
+          // apply selected preset
+          UPLOADED_IMAGE.usePreset = true;
+          UPLOADED_IMAGE.preset = data.method;
+        }
+        else { // a slider change
+          // store slider value
+          UPLOADED_IMAGE.setFilterList(data.method, data.value);
+          console.log(`method: ${data.method}, value: ${data.value}`);
+        }
+
+        // apply filter to cropped canvas
         applyFilters();
         break;
     }; // end switch
@@ -824,11 +858,35 @@ import RawImage from './RawImage.js';
         break;
       case 'plateHeight':
       case 'plateWidth':
+          // no crop initialized, so no need to adjust the crop box
+          if(!CROPPER.cropped || UPLOADED_IMAGE.image == 'none'){
+            CROPPER_OPTIONS.aspectRatio = Globals.aspectRatio;
+            CROPPER.setAspectRatio(Globals.aspectRatio);
+            break;
+          }
+          let changingWidth = data.method.split('plate')[0].toLowerCase() == 'width';
+          let currentCBD = CROPPER.getCropBoxData();
           CROPPER_OPTIONS.aspectRatio = Globals.aspectRatio;
-
           // set ratio triggers the crop event, don't call need to call display mosaics then
           UPLOADED_IMAGE.callOnCrop = false;
           CROPPER.setAspectRatio(Globals.aspectRatio);
+          // let centerLEFT = currentCBD.width * .5 + currentCBD.left;
+          // let centerTOP = currentCBD.height * .5 + currentCBD.top;
+
+          let newWidth = changingWidth ? currentCBD.height * Globals.aspectRatio : currentCBD.width;
+          let newHeight = !changingWidth ? currentCBD.width / Globals.aspectRatio : currentCBD.height;
+          let newCBDdata = {
+            width: newWidth,
+            height: newHeight,
+            left: currentCBD.left,
+            top: currentCBD.top,
+            // left: changingWidth ? centerLEFT - (newWidth*.5) : currentCBD.left,
+            // top: !changingWidth ? centerTOP - (newHeight*.5) : currentCBD.top,
+          };
+
+          UPLOADED_IMAGE.callOnCrop = false;
+          CROPPER.setCropBoxData(newCBDdata);
+          break;
       case 'autoface':
           updateMosaic = false;
           getImageForAutoFace();
@@ -857,18 +915,12 @@ import RawImage from './RawImage.js';
   }
 
 
-  // return a copty of a canvas
-  function filterCopyCanvas(canvas){
-    if(!canvas){ canvas = UPLOADED_IMAGE.moasicOptions.canvas; }
+  // return a copty of the canvas
+  function getFilterPrep(done){
+    let canvas = UPLOADED_IMAGE.moasicOptions.canvas;
     let imgData = canvas.getContext('2d').getImageData(0,0,canvas.width, canvas.height);
     let copyCanvas = canvas.cloneNode();
     copyCanvas.getContext('2d').putImageData(imgData, 0, 0);
-    return copyCanvas;
-  }
-
-  // apply filters to a copy of the canvas, these filters do stack, so a copy is necessary
-  function applyFilters(canvas, done){
-    if(!canvas){canvas = filterCopyCanvas();}
     if(!done){
       console.log('no callback function passed! creating one!');
       done = function(resp){
@@ -881,12 +933,27 @@ import RawImage from './RawImage.js';
           SLIDER_CROPPED.appendChild(resp);
       };
     }
+    return {
+      canvas: copyCanvas,
+      done: done,
+    };
+  }
 
-    // get all the slider values and reapply them
-    let sliderList = Object.keys(UPLOADED_IMAGE.filterList);
+  // apply filters to a copy of the canvas, these filters do stack, so a copy is necessary
+  function applyFilters(done){
+    let prep = getFilterPrep(done);
+    let canvas = prep.canvas;
+    done = prep.done;
+
     Caman(canvas, function() {
-      for (let i=0; i<sliderList.length; i++){
-        this[ sliderList[i] ]( UPLOADED_IMAGE.filterList[ sliderList[i] ] );
+      // use caman preset if preset bool
+      if(UPLOADED_IMAGE.usePreset){
+        this[ UPLOADED_IMAGE.preset ]();
+      }
+      if(UPLOADED_IMAGE.applyFilters) {
+        for ( let [key, value] of Object.entries( UPLOADED_IMAGE.filterList ) ){
+          this[ key ]( value );
+        }
       }
       this.render(function(){
         done(this.canvas);
@@ -956,70 +1023,52 @@ import RawImage from './RawImage.js';
     return cookieValue;
 }
 // setup use with dither js
-function ditherResult(canvas, options){
-
-  if(!options || !canvas){canvas = getCropperCanvas();}
-  // CONTAINER_RESULT.appendChild(canvas);
-
-  // options with defaults (not required)
-  var opts = {
-      // Transparent pixels will result in a sparse indexed array
-      reIndex: false,                       // affects predefined palettes only. if true, allows compacting of sparsed palette once target palette size is reached. also enables palette sorting.
-      palette: Globals.paletteAsArray,    // a predefined palette to start with in r,g,b tuple format: [[r,g,b],[r,g,b]...]
-      colorDist: Globals.colorDist[0],      // one of ['euclidean', 'manhattan']
-      dithKern: Globals.ditherKernals[0],   // dithering kernel name, see available kernels in docs below
-      dithDelta: 0,            // dithering threshhold (0-1) e.g: 0.05 will not dither colors with <= 5% difference
-      dithSerp: false,         // enable serpentine pattern dithering
-      method: 2,               // histogram method, 2: min-population threshold within subregions; 1: global top-population
-      boxSize: [64,64],        // subregion dims (if method = 2)
-      boxPxls: 2,              // min-population threshold (if method = 2)
-      initColors: 4096,        // # of top-occurring colors  to start with (if method = 1)
-      minHueCols: 0,           // # of colors per hue group to evaluate regardless of counts, to retain low-count hues
-      useCache: false,         // enables caching for perf usually, but can reduce perf in some cases, like pre-def palettes
-      cacheFreq: 10,           // min color occurance count needed to qualify for caching
-      // colors: 256,          // desired palette size
-  };
-
-  let q = new RgbQuant(Object.assign({}, opts, options));
-
-  // q.sample(canvas);
-  // const palette = q.palette(true);
-  let output = q.reduce(canvas);
-  // console.log(output);
-  let ctx = canvas.getContext('2d');
-  ctx.putImageData(handleUnit8Array(canvas, output), 0, 0);
-
-  return canvas;
-
-}
-
-function handleUnit8Array(canvas, arry) {
-  let imageData = new ImageData(canvas.width, canvas.height);
-  for (var i=0;i < arry.length; i+=4) {
-      imageData.data[i]   = arry[i];
-      imageData.data[i+1] = arry[i+1];
-      imageData.data[i+2] = arry[i+2];
-      imageData.data[i+3] = arry[i+3];
-  }
-  return imageData;
-}
-
-// clear sliders,
-// function resetSliders(toClear){
-//   let sliders = Object.keys(UPLOADED_IMAGE.filterList);
-//   if(!toClear){ toClear = sliders; }
-//   else if(!Array.isarray(toCLear)){
-//     if (typeof toClear == 'string' && sliders.inlcudes(toClear)){ toClear = [toClear]; }
-//     else{ throw new Error('invalid slider to clear, expected array of string names / one string name, of a slider'); }
+// function ditherResult(canvas, options){
+//
+//   if(!options || !canvas){canvas = getCropperCanvas();}
+//   // CONTAINER_RESULT.appendChild(canvas);
+//
+//   // options with defaults (not required)
+//   var opts = {
+//       // Transparent pixels will result in a sparse indexed array
+//       reIndex: false,                       // affects predefined palettes only. if true, allows compacting of sparsed palette once target palette size is reached. also enables palette sorting.
+//       palette: Globals.paletteAsArray,    // a predefined palette to start with in r,g,b tuple format: [[r,g,b],[r,g,b]...]
+//       colorDist: Globals.colorDist[0],      // one of ['euclidean', 'manhattan']
+//       dithKern: Globals.ditherKernals[0],   // dithering kernel name, see available kernels in docs below
+//       dithDelta: 0,            // dithering threshhold (0-1) e.g: 0.05 will not dither colors with <= 5% difference
+//       dithSerp: false,         // enable serpentine pattern dithering
+//       method: 2,               // histogram method, 2: min-population threshold within subregions; 1: global top-population
+//       boxSize: [64,64],        // subregion dims (if method = 2)
+//       boxPxls: 2,              // min-population threshold (if method = 2)
+//       initColors: 4096,        // # of top-occurring colors  to start with (if method = 1)
+//       minHueCols: 0,           // # of colors per hue group to evaluate regardless of counts, to retain low-count hues
+//       useCache: false,         // enables caching for perf usually, but can reduce perf in some cases, like pre-def palettes
+//       cacheFreq: 10,           // min color occurance count needed to qualify for caching
+//       // colors: 256,          // desired palette size
+//   };
+//
+//   let q = new RgbQuant(Object.assign({}, opts, options));
+//
+//   // q.sample(canvas);
+//   // const palette = q.palette(true);
+//   let output = q.reduce(canvas);
+//   // console.log(output);
+//   let ctx = canvas.getContext('2d');
+//   ctx.putImageData(handleUnit8Array(canvas, output), 0, 0);
+//
+//   return canvas;
+//
+// }
+//
+// function handleUnit8Array(canvas, arry) {
+//   let imageData = new ImageData(canvas.width, canvas.height);
+//   for (var i=0;i < arry.length; i+=4) {
+//       imageData.data[i]   = arry[i];
+//       imageData.data[i+1] = arry[i+1];
+//       imageData.data[i+2] = arry[i+2];
+//       imageData.data[i+3] = arry[i+3];
 //   }
-//   else {
-//     let expectedEmpty = toClear.filter(s=> !sliders.includes(s));
-//     if (expectedEmpty.length > 0){ throw new Error('invalid slider array passed, contains invalid sliner name'); }
-//   }
-//   for(let i=0; i<toClear.length; i++){
-//     document.getElementById( toClear[i]+'Range' ).value = 0;
-//     UPLOADED_IMAGE.setFilterList( toClear[i] , 0 );
-//   }
+//   return imageData;
 // }
 
 })( window );

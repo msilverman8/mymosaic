@@ -153,13 +153,13 @@
       return mappedColor;
     } // end map color
 
-    mappedArrayColor(red, green, blue){
+    mappedArrayColor(red, green, blue, colorList){
       var diffR, diffG, diffB, diffDistance;
       var distance = 25000;
       var mappedColor = null;
       // WEIGHTED
-      for (var i = 0; i < this.options.palette.length; i++) {
-        var rgb = this.options.palette[i];
+      for (var i = 0; i < colorList.length; i++) {
+        var rgb = colorList[i];
         diffR = ((rgb.r - red)   * this.utils.weight.r);
         diffG = ((rgb.g - green) * this.utils.weight.g);
         diffB = ((rgb.b - blue)  * this.utils.weight.b);
@@ -177,15 +177,17 @@
       return mappedColor;
     }
 
-    convertColor(imageData) {
+    convertColor(imageData, colorList) {
       var data = imageData.data;
       for (var i = 0; i < data.length; i+=4) {
-        let newData = this.mappedArrayColor( data[i], data[i + 1], data[i + 2] );
+        let newData = this.mappedArrayColor( data[i], data[i + 1], data[i + 2], colorList );
         data[i] = newData[0];
         data[i + 1] = newData[0 + 1];
         data[i + 2] = newData[0 + 2];
+        // manually set alpha to full opacity or keep it transparent
+        // data[i + 3] = newData[0 + 3] > 0 ? 255 : 0;
       }
-      return imageData
+      return imageData;
     }
 
     adjustMosaicDisplay(canvas, displaySize) {
@@ -323,7 +325,7 @@
       // this.options.canvas.height = height;
 
       // match colors
-      this.mosaicColorData = this.convertColor(img2).data;
+      this.mosaicColorData = this.convertColor(img2, this.options.palette).data;
       // img2 = this.convertColor(img2);
       // store color array as canvas imagedata.data
       // this.mosaicColorData = img2.data;
@@ -333,6 +335,7 @@
       // return this.options.canvas
     }
 
+    // the main one to use right now
     createTiles(){
       // get values needed for process
       const s = this.options.tileSize;
@@ -348,7 +351,7 @@
         let ctx = canvas.getContext('2d');
         let imda = ctx.getImageData(0, 0, canvas.width, canvas.height);
         // match  & store colors
-        this.mosaicColorData = this.convertColor(imda).data;
+        this.mosaicColorData = this.convertColor(imda, this.options.palette).data;
       }
 
       // get output info
@@ -357,7 +360,17 @@
       mosaicCanvas.width = w * s;
       mosaicCanvas.height = h * s;
 
+      // if remove bg is checked, first fill the canvas with the bg
+      console.log('%c what is this val '+this.options.useBG,'color:purple;');
+
+      if(this.options.useBG){
+        console.log('using background');
+        this.renderBG(mosaicContext, mosaicCanvas.width, mosaicCanvas.height);
+        // return mosaicCanvas;
+      }
+
       this.forCheck = [];
+      // plate borders for a visual of viewing the plate and tile division
       const plateBorders = this.getCaps();
       // iterate through to get tiles
       for (var i = 0; i < h; i++) {
@@ -375,8 +388,12 @@
             }
             color.push(r);
           }
+
+          // if(i> (h*.5) || j>(w*.5)){color[3] = 0;}
+          // if(color[3]<1){color = missing;}
+
           // output tile to canvas
-          mosaicContext.fillStyle = 'rgb('+ color[0] +','+ color[1] +','+ color[2] +','+ color[3]/255 +')';
+          mosaicContext.fillStyle = 'rgba('+ color[0] +','+ color[1] +','+ color[2] +','+ Math.ceil(color[3]/255) +')';
           mosaicContext.fillRect((j * s) , (i * s), s, s);
           this.forCheck.push(color[0], color[1], color[2], color[3]);
 
@@ -567,8 +584,113 @@
       }
 
       // eventually get a final key value pair, but for now
-      return count
+      return count;
     }
+
+    // methods that deal with creating backgrounds
+
+    _convertColorListToRGBA(){
+      let rgbaString = [];
+      for(let i=0; i< this.options.fillColorList.length; i++){
+        let c = this.options.fillColorList[i].split(',');
+        let color = 'rgba('+ c[0] +','+ c[1] +','+ c[2] +',1)';
+        rgbaString.push(color);
+      }
+
+      return rgbaString;
+    }
+
+    _convertColorListToDICT(){
+      let obj = [];
+      for(let i=0; i< this.options.fillColorList.length; i++){
+        let c = this.options.fillColorList[i].split(',');
+        let color = {r:c[0], g:c[1], b:c[2]};
+        obj.push(color);
+      }
+
+      return obj;
+    }
+
+    //each pixel check if inside pizza
+
+    // cases for which pattern is selected
+    renderBG(ctx, width, height){
+      console.log('this.options.fillPattern');
+      console.log(this.options.fillPattern);
+      // make sure there is at least one color to use
+      if(this.options.fillColorList.length == 0) { this.options.fillColorList.push('255,255,255'); }
+      let rgbaLIST = this._convertColorListToRGBA();
+      switch (this.options.fillPattern) {
+        case 'solid':
+          ctx.fillStyle = rgbaLIST[0];
+          console.log(rgbaLIST[0]);
+          ctx.fillRect(0, 0, width, height);
+          break;
+        case 'burst':
+          // make sure there are atleast 2 colors in this pattern
+          if(this.options.fillColorList.length < 2) { this.options.fillColorList.push(this.options.fillColorList[0]); }
+          let imda = this._pattern_burst(rgbaLIST);
+          let palette = this._convertColorListToDICT();
+          let data = this.convertColor(imda, palette).data;
+          let checkColors = [];
+
+          for (var i = 0; i < this.options.tilesY; i++) {
+            for (var j = 0; j < this.options.tilesX; j++) {
+              let index = (j + (i * this.options.tilesX)) * 4;
+
+              let color = [];
+              // get color from stored data
+              for (let c = 0; c < 4; c++) {
+                let r = data[index + c];
+                color.push(r);
+                // manually set alpha to full opacity
+                // color[3] = 255;
+              }
+
+              // output tile to canvas
+              let fillColor = 'rgba('+ color[0] +','+ color[1] +','+ color[2] +',1)';
+              ctx.fillStyle = fillColor
+              ctx.fillRect((j * this.options.tileSize) , (i * this.options.tileSize), this.options.tileSize, this.options.tileSize);
+
+              if(!checkColors.includes(fillColor)){ checkColors.push(fillColor); }
+            }
+          }
+
+          console.log('check burst colors');
+          console.table(checkColors);
+
+          break;
+      }
+    } // end render bg
+
+    _pattern_burst(colorList){
+      let canvas = document.createElement('canvas');
+      canvas.width = this.options.tilesX;
+      canvas.height = this.options.tilesY;
+      let ctx = canvas.getContext('2d');
+
+      let side = Math.max(this.options.tilesX, this.options.tilesY);
+      let radius = Math.sqrt(Math.pow(side*.5, 2) + Math.pow(side*.5, 2));
+      let segments = 16;
+      var segmentWidth = 360 / segments;
+      let x = this.options.tilesX * .5;
+      let y = this.options.tilesY * .5;
+      // let segmentDepth = side / segments;
+      let pieAngle = 2 * Math.PI / segments;
+      for (var i = 0; i < segments; i++) {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.arc(x, y, radius, i*pieAngle, (i+1)*pieAngle, false);
+          let index = i % 2 == 0 ? 0 : 1;
+          ctx.fillStyle = colorList[index];
+          ctx.fill();
+      }
+
+      return ctx.getImageData(0, 0, canvas.width, canvas.height);
+    } // end burst pattern
+
+
+
   } // end class ConvertPhoto
 
 
