@@ -19,7 +19,24 @@ from rest_framework.renderers import JSONRenderer
 
 import io
 import json
-
+# import requests
+#
+# def get_removeBG(request):
+#     # Requires "requests" to be installed (see python-requests.org)
+#     response = requests.post(
+#         'https://api.remove.bg/v1.0/removebg',
+#         data={
+#             'image_url': 'https://www.remove.bg/example.jpg',
+#             'size': 'auto'
+#         },
+#         headers={'X-Api-Key': 'INSERT_YOUR_API_KEY_HERE'},
+#     )
+#     if response.status_code == requests.codes.ok:
+#         with open('no-bg.png', 'wb') as out:
+#             out.write(response.content)
+#     else:
+#         print("Error:", response.status_code, response.text)
+#
 
 def get_color_data(request):
     response = {
@@ -54,7 +71,7 @@ class Index(TemplateView):
                 'burst': 2,
                 'solid': 1,
             },
-            'presetList': {
+            'presetList': {  # key is the caman method name, value is the dusplay name to the user
                 'clarity': 'auto',
                 'hazyDays': 'soft glow',
                 'glowingSun': 'lighten',

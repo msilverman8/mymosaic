@@ -10,5 +10,5 @@ urlpatterns = [
     path('instructions/<pk>/', InstructionView.as_view(), name='instructions'),
     path('test/<pk>/', testInstructionPage, name='testInstructions'),
     # path('add-to-cart/<pk>/', add_to_cart, name='add-to-cart'),
-    # path('remove-from-cart/<pk>/', remove_from_cart, name='remove-from-cart')
+    # path('remove-from-cart/<pk>/', remove_from_cart, name='remove-from-cart'),
 ]

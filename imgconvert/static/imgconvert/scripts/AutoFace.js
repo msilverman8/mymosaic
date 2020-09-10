@@ -56,6 +56,8 @@
       else { // calculating here based on display size and using set cropbox on main
         this.maxWidth = this.options.displaySize.width;
         this.maxHeight = this.options.displaySize.height;
+        this.adjustTop = this.options.displaySize.top;
+        this.adjustLeft = this.options.displaySize.left;
       }
     }
 
@@ -132,20 +134,8 @@
       return false;
     }
 
-    /**
-     * calculations necessary to get the new crop area bounds based on received
-     * detected face bounds
-     * @param  {[object]} facebounds [x, y, w, h] of the detected face location
-     * @return {[object]}            [top or y, left or x, width, height] of the new cropping area bounds
-     */
-    _getAutoCropBounds(facebounds) {
-      // no faces detected
-      if(!facebounds){
-        console.log('no faces detected');
-        return false;
-      }
-      // get the values for the merged faces calculated bounds
-      const {w, h, x, y} = facebounds;
+    _getWidthHeightForAspectRatio(params){
+      const {w, h, x, y} = params;
       // get aspect ratio
       const ar = this.options.aspectRatio;
 
@@ -167,57 +157,72 @@
       let outputX = Math.max(0, (x - (outputWidth - w) * 0.5));
       let outputY = Math.max(0, (y - (outputHeight - h) * 0.5));
 
-
-      // dictionary formatted specifically for cropper
-      let cdata = {
-        left: outputX,
-        top: outputY,
-        width: outputWidth,
-        height: outputHeight,
+      return {
+        'h': outputHeight,
+        'w': outputWidth,
+        'x': outputX,
+        'y': outputY,
       };
+    }
 
+    /**
+     * calculations necessary to get the new crop area bounds based on received
+     * detected face bounds
+     * @param  {[object]} facebounds [x, y, w, h] of the detected face location
+     * @return {[object]}            [top or y, left or x, width, height] of the new cropping area bounds
+     */
+    _getAutoCropBounds(facebounds) {
+      // no faces detected
+      if(!facebounds){
+        console.log('no faces detected');
+        return false;
+      }
+
+      // get the output dimensions for an aspect ratio'd box that gits in the image bounds
+      const fb = this._getWidthHeightForAspectRatio(facebounds);
+      const {w, h, x, y} = fb;
 
 
       // add padding around face box
-      // const p = 0; // .08;
-      // const padding = Math.ceil(Math.min(outputWidth, outputHeight) * p);
-      //
-      // let paddedWidth = outputWidth + padding;
-      // let paddedHeight = outputHeight + padding;
-      // // make sure padding doesn't make the area exceed original image
-      // let usePadding = (paddedWidth <= this.options.displaySize.width && paddedHeight <= this.options.displaySize.height);
-      //
-      // let cdata;
-      // if(usePadding) {
-      //   cdata = {
-      //     left: Math.max(0, (outputX - padding)),
-      //     top: Math.max(0, (outputY - padding)),
-      //     width: paddedWidth,
-      //     height: paddedHeight,
-      //   };
-      // }
+      const p = .5;
+      const padding = Math.ceil(Math.min(w, h) * p);
 
-      console.table({
-        'x, y': [x, y],
-        'face': [w, h],
-        'imag': [this.options.displaySize.width, this.options.displaySize.height],
-        'n xy': [outputX, outputY],
-        'finl': [outputWidth, outputHeight],
-        'r XY': [cdata.left, cdata.top],
-        'r WH': [cdata.width, cdata.height]
-      });
+      // adjusted left/top for when display container is bigger than the image size
+      let px =  this.adjustLeft ? x + this.adjustLeft : x;
+      let ph =  this.adjustTop ? y + this.adjustTop : y;
+      let cdata = {
+        'w': Math.min(this.maxWidth, w + padding),
+        'h': Math.min(this.maxHeight, h + padding),
+      };
+
+      // center bounds in image as much as possible
+      cdata.x = Math.max(0, (px - (cdata.w - w) * 0.5));
+      cdata.y = Math.max(0, (ph - (cdata.h - h) * 0.5));
+
+      const paddedOutputs = this._getWidthHeightForAspectRatio(cdata);
+
+      let pdata = {
+          left: paddedOutputs.x,
+          top: paddedOutputs.y,
+          width: paddedOutputs.w,
+          height: paddedOutputs.h,
+      };
+
+      // pdata = facebounds;
+      console.table(pdata);
+
 
       // left and top is for set crop box
       // x and y is for set data
       if(this.options.useOriginal) {
-        cdata.x = cdata.left;
-        cdata.y = cdata.top;
+        pdata.x = pdata.left;
+        pdata.y = pdata.top;
 
-        delete cdata.left;
-        delete cdata.top;
+        delete pdata.left;
+        delete pdata.top;
       }
 
-      return cdata;
+      return pdata;
     } // end get crop area
 
     /**
