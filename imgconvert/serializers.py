@@ -9,3 +9,12 @@ class MosaicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mosaic
         fields = ['id', 'color', 'mosaic', 'plates', 'materials']
+
+
+# serializer standalone for file upload / receive from remove bg
+class ImageSerializer(serializers.Serializer):
+    image_file = serializers.ImageField()
+
+    # def save(self):
+    #     image = self.validated_data['image']
+    #     return self.image
