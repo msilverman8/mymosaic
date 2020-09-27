@@ -1,55 +1,39 @@
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, FileResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.views.generic import TemplateView, ListView, DetailView
 from django.contrib import messages
 from django.utils import timezone
-
-from .models import Mosaic, Order, MosaicOrder
-from .serializers import MosaicSerializer
-from .colors import BrickMosaic
-from .globals import COLOR_KEYS
+from django.conf import settings
+from django.core.files import File
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser, FileUploadParser
+from rest_framework.exceptions import ParseError
 from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 
-import io
-import json
-# import requests
-#
-# def get_removeBG(request):
-#     # Requires "requests" to be installed (see python-requests.org)
-#     response = requests.post(
-#         'https://api.remove.bg/v1.0/removebg',
-#         data={
-#             'image_url': 'https://www.remove.bg/example.jpg',
-#             'size': 'auto'
-#         },
-#         headers={'X-Api-Key': 'INSERT_YOUR_API_KEY_HERE'},
-#     )
-#     if response.status_code == requests.codes.ok:
-#         with open('no-bg.png', 'wb') as out:
-#             out.write(response.content)
-#     else:
-#         print("Error:", response.status_code, response.text)
-#
+import requests
+from PIL import Image
 
-def get_color_data(request):
-    response = {
-        'CL': BrickMosaic().get_filtered_colors('CL'),
-        'GR': BrickMosaic().get_filtered_colors('GR'),
-        'BW': BrickMosaic().get_filtered_colors('BW'),
-        # 'AL': BrickMosaic().get_filtered_colors('AL'),
-        # 'names': BrickMosaic().get_name_to_color(),
-    }
-    return JsonResponse(response)
+from .models import Mosaic, Order, MosaicOrder
+from .serializers import MosaicSerializer, ImageSerializer
+from .colors import BrickMosaic
+from .globals import COLOR_KEYS
+from .custom_renderers import PNGRenderer
+from .custom_parsers import ImageUploadParser
 
 
 class Index(TemplateView):
+    """
+    view for dynamically loading the main page
+    default_values: are used for loading initial values into the template, format is based on other sections
+    mosaic_tools:   are used for values for the mosaic adjustment available options
+    color_data:     are used for passing the palette values to the front end
+    """
     template_name = 'imgconvert/index.html'
 
     def default_values(self):
@@ -136,8 +120,10 @@ class Index(TemplateView):
         return r
 
 
-
 class InstructionView(TemplateView):
+    """
+    initial page for instructions on building a created and shipped mosaic
+    """
     template_name = "imgconvert/instructions.html"
 
     def get_context_data(self, **kwargs):
@@ -153,11 +139,74 @@ class InstructionView(TemplateView):
 
 
 def testInstructionPage(request, pk):
+    """
+    redirects to send correct id of mosaic to build the page in the instruction view
+    """
     get_object_or_404(Mosaic, pk=pk)
     return redirect("imgconvert:instructions", pk=pk)
 
 
+class UploadImageTest(APIView):
+    parser_class = (MultiPartParser, FormParser,)
+    renderer_classes = (PNGRenderer,)
+
+    def post(self, request):
+        print(request.data)
+        if 'image_file' not in request.data:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        f = request.data['image_file']
+
+        # use pillow verify to ensure user uploaded file is an image
+        try:
+            with Image.open(f) as img:
+                img.verify()
+        except:
+            return Response(status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        with f.open('rb') as img:
+            return Response(img.read(), status=status.HTTP_201_CREATED)
+
+
+class PostImageForRemoveBg(APIView):
+    parser_class = (MultiPartParser, FormParser,)
+    renderer_classes = [PNGRenderer, JSONRenderer]
+
+    def post(self, request):
+        print('--- did the file transfer ? ---')
+        print(request)
+        print(request.data)
+        f = request.data['image_file']
+
+        # with f.open('rb') as img:
+        response = requests.post(
+            # 'https://api.remove.bg/v1.0/removebg',
+            'http://127.0.0.1:3000/file/fake/',
+            files={'image_file': f},
+            data={'size': 'auto'},
+            headers={
+                'Accept': 'image/*',
+                'X-Api-Key': settings.REMOVEBG_API_KEY},
+        )
+
+        print('--- response from fake server ---')
+        print(response)
+        print(response.content)
+        if response.status_code == requests.codes.ok:
+            print("response returned ok")
+            try:
+                return Response(response)
+            except:
+                print("not able to return response")
+                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            print("Error:", response.status_code, response.text)
+            return response
+
+
 class SetColorData(APIView):
+    """
+    initial save method for storing the mosaic to the database
+    """
     def post(self, request):
         print('received post request with request data')
         print('--------------------------------')
