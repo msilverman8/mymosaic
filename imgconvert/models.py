@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.shortcuts import reverse
-from django.contrib.postgres.fields import JSONField
+# from django.contrib.postgres.fields import JSONField
 from .globals import COLOR_KEYS
 
 
@@ -11,8 +11,8 @@ class Mosaic(models.Model):
     """
     color = models.CharField(choices=COLOR_KEYS, default=COLOR_KEYS.color, max_length=2)
     plates = models.IntegerField()
-    mosaic = JSONField()
-    materials = JSONField()
+    mosaic = models.JSONField()
+    materials = models.JSONField()
 
     def __str__(self):
         """ readable name for python object """
