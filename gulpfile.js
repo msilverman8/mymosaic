@@ -57,7 +57,6 @@ function js(done) {
   jsFILES.map( function( entry ) {
     // browserify
     return browserify({
-      // entries: [jsSRC + entry]
       entries: [jsSRC + entry]
     })
     //babelify
@@ -95,6 +94,7 @@ const vendorLIST = [
   'caman/dist/caman.full.min.js',
   'cropperjs/dist/cropper.min.css',
   'cropperjs/dist/cropper.min.js',
+  // 'cropperjs/dist/cropper.js',
   // 'ditherjs/dist/ditherjs.dist.js',
   'face-api.js/dist/face-api.min.js',
   'face-api.js/dist/face-api.js.map',
