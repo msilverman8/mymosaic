@@ -11,16 +11,30 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+from os.path import join, dirname
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = dirname(dirname(os.path.abspath(__file__)))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'z813u@y3f&0_$=)aw969!d(8l9xc-8!9akpbe%vmqkld$*!e*s'
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+# all the variables loaded from the .env file
+SECRET_KEY = os.environ.get("SECRET_KEY")
+
+DATABASE_USER = os.environ.get("DATABASE_USER")
+DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")
+DATABASE_NAME = os.environ.get("DATABASE_NAME")
+DATABASE_HOST = os.environ.get("DATABASE_HOST")
+DATABASE_PORT = os.environ.get("DATABASE_PORT")
+
+REMOVEBG_API_KEY = os.environ.get("REMOVEBG_API_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -96,11 +110,11 @@ WSGI_APPLICATION = 'mymosaic.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'mymosaicdb',
-        'USER': 'admin',
-        'PASSWORD': '12345',
-        'HOST': 'localhost',
-        'PORT': '5432',  # default postgres port
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
+        'HOST': DATABASE_HOST,
+        'PORT': DATABASE_PORT,
     }
 }
 
@@ -128,7 +142,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/New_York'
 
 USE_I18N = True
 
