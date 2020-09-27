@@ -1,11 +1,10 @@
-from .views import Index, get_color_data, SetColorData, InstructionView, testInstructionPage, PostImageForRemoveBg, UploadImageTest
+from .views import Index, SetColorData, InstructionView, testInstructionPage, PostImageForRemoveBg, UploadImageTest
 from django.urls import path
 
 app_name = 'imgconvert'
 
 urlpatterns = [
     path('', Index.as_view(), name='convert'),
-    path('getColorData/', get_color_data),
     path('setColorData/', SetColorData.as_view()),
     path('instructions/<pk>/', InstructionView.as_view(), name='instructions'),
     path('test/<pk>/', testInstructionPage, name='testInstructions'),
