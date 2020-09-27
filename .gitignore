@@ -20,3 +20,4 @@ imgconvert/static/imgconvert/scripts/tile.js
 /imgconvert/templates/imgconvert/mosaic_toolbar_old.html
 /imgconvert/templates/imgconvert/plate_count_dropdown.html
 /imgconvert/static/imgconvert/scripts/devoptions.js
+mymosaic/.env
