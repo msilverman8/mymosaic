@@ -30,7 +30,9 @@
                 {# <div class="row"> #}
                     <!-- (cropper.js) Wrap the img/canvas (block) with another block element (container) -->
                     <!-- cropper.js requires the img/canvas element to be the same size as container -->
-                    <div id="containerUploaded" class="img-container"></div>
+                    <div id="containerUploaded" class="img-container">
+                      <img id="imgUploaded">
+                    </div>
 
                 {# </div> <!-- end display image container --> #}
 
@@ -75,6 +77,7 @@
     <script type="text/javascript" src="{% static 'build/vendor/face-api.min.js' %}"></script>
     <!-- <script type="text/javascript" src="{% static 'build/vendor/ditherjs.dist.js' %}"></script> -->
     <script type="text/javascript" src="{% static 'build/vendor/cropper.min.js' %}"></script>
+    {# <script type="text/javascript" src="{% static 'build/vendor/cropper.js' %}"></script> #}
     {# <script type="text/javascript" src="{% static 'build/vendor/caman.min.js' %}"></script> #}
     <script type="text/javascript" src="{% static 'build/vendor/caman.full.min.js' %}"></script>
     <!-- local scripts -->
