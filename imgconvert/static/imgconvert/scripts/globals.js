@@ -112,8 +112,8 @@ var Globals = {
 
   // 3rd party
   // ditherjs properties
-  ditherKernals: [null, 'FloydSteinberg', 'FalseFloydSteinberg', 'Stucki', 'Atkinson', 'Jarvis', 'Burkes', 'Sierra', 'TwoSierra', 'SierraLite'],
-  colorDist: ['euclidean', 'manhattan'],
+  // ditherKernals: [null, 'FloydSteinberg', 'FalseFloydSteinberg', 'Stucki', 'Atkinson', 'Jarvis', 'Burkes', 'Sierra', 'TwoSierra', 'SierraLite'],
+  // colorDist: ['euclidean', 'manhattan'],
 
 };
 

@@ -54,7 +54,7 @@ const AutoFace = require('./AutoFace.js');
         console.log('- converting for sample default preview -');
         // display raw preview
         // uses default cropper canvas options to optain a canvas
-        canvasPreview({
+        setConversionSettings({
           targetElement: PREVIEW_RESULT,
           tileSize: Math.max( 1, Math.floor(PREVIEW_RESULT.clientWidth/Globals.x) ),
           saveCanvas: false,
@@ -71,7 +71,7 @@ const AutoFace = require('./AutoFace.js');
           saveCanvas: true,
         };
 
-        canvasPreview(defaults);
+        setConversionSettings(defaults);
 
 
         // there are no more changes so no need to save again.
@@ -173,10 +173,12 @@ const AutoFace = require('./AutoFace.js');
 
 
 
-
-  // get options to sent to convert photo
-  // kinda a options dictionary builder for the conversion to tiled mosaic
-  function canvasPreview(options){
+  /**
+   * builds the settings for the conversion, calls the conversion function
+   * @param  {[object]} options [takes in passed settings to override defaults]
+   */
+  function setConversionSettings(options){
+    // get options to sent to convert photo
     console.log(' --- canvas preview --- ');
     // const previewWidth = Globals.x * Globals.tileSize;
     // const previewHeight = Globals.y * Globals.tileSize;
@@ -187,20 +189,20 @@ const AutoFace = require('./AutoFace.js');
     let defaults = {
       // where the mosoic is loaded should stay constant
       targetElement: CONTAINER_RESULT,
-      // the ontly readon this should change is on responsive window resize
+      // the only reason this should change is on responsive window resize?
       tileSize: Globals.tileSize,
     };
     let updateEveryCall = {
       colorChoice: Globals.color,       // the key name for the palette a string
-      palette: Globals.palette,         // list of the color palette
+      palette: Globals.palette,         // array of the rgba colors
       tilesX: Globals.x,                // number of tiles in the x axis
       tilesY: Globals.y,                // number of tiles in the y axis
       // values below are only used if defaults useBG is true (remove bg is checked)
-      // whether or not to use the bg pattern
-      useBG: Globals.useBG,
+      useBG: Globals.useBG,             // whether or not to use the bg pattern
       fillColorList: Globals.bgColors,  // list of colors to use in the bg
-      fillPattern: Globals.bgPattern,      // string of the bg pattern type
+      fillPattern: Globals.bgPattern,   // string of the bg pattern type
     };
+    // get option object from defaults + passed
     let ops;
     if(useOptions){ ops = Object.assign({}, defaults, options, updateEveryCall); }
     else { ops = Object.assign({}, defaults, updateEveryCall); }
@@ -228,6 +230,7 @@ const AutoFace = require('./AutoFace.js');
           SLIDER_CROPPED.innerHTML = '';
           SLIDER_CROPPED.appendChild(resp);
         });
+        // applyFilters calls conversion
         return;
       }
       // called with a filter canvas object passed, so was called from the filter listener
@@ -237,9 +240,13 @@ const AutoFace = require('./AutoFace.js');
     callConversion(ops);
   } // end preview canvas
 
+  /**
+   * [calls the method in convertPhoto, updates the dom, updates the current image tracking object]
+   * @param  {[object]} ops [the options built in setConversionSettings]
+   * @return {[type]}     [description]
+   */
   function callConversion(ops){
-    // holdover from testing different tiling methods, might still use it so keep the format
-    let method = 'createTiles';
+    let method = 'createTiles';  // holdover from testing different tiling methods, might still use it so keep the format
     if( ops.hasOwnProperty('methodname') ){ method = ops.methodname; }
 
     // create the mosaic instance
@@ -317,36 +324,38 @@ const AutoFace = require('./AutoFace.js');
     }
   } // end display palette
 
+  /**
+   * either builds new cropper instance with new upload or switches out removebg/original image
+   * @param  {[string]} typeSTR [whether or not it's a new upload or a switch out]
+   */
   function appendCropperImageToDOM(typeSTR){
-    // three scenarios
-    // 1. new upload = destry cropper and instance a new one
-    // 2. call CROPPER.replace anyway even though the images are different sizes
-    // 3. manually adjust cropper transformations and upload new img element and new cropper instance
     console.log('appending to dom');
-    const suffix = '_uploadedImageURL';
-    const urlkey = typeSTR + suffix;
-    let src = UploadedImage[ urlkey ];
+    const suffix = '_uploadedImageURL';   // the suffix for the key for the objecturl
+    const urlkey = typeSTR + suffix;      // the full url key
+    let src = UploadedImage[ urlkey ];    // the objecturl
     console.log('image source is');
     console.log(src);
 
-    // get transformations of curent image to apply to the impending image if swapping
+    // set transformations of current cropper instance to apply to the impending image if swapping
     if(CROPPER && CROPPER.cropped){
       console.log('%c--------------------------','color:red;');
       console.log('switching image');
 
+      // false becuase removebg returns a different sized image
       CROPPER.replace(src, false);
 
-      // cropper ready should be the same for both images for a switch out
+      // update the ready function to be different from a new upload
       CROPPER.options.ready = function(e) {
         console.log('%c'+e.type,'color:green;');
         console.log('ready has been reset after replace');
 
-        // set values of transforms for this image session
+        // set values of transforms for this image session after ready
 
         // rotate
         UploadedImage.callOnCrop = false;
         CROPPER.rotateTo(UploadedImage.storedCropperData.naturalData.rotate);
 
+        // zoom + move values
         UploadedImage.callOnCrop = false;
         CROPPER.setCanvasData({
           left: UploadedImage.storedCropperData.wrapperData.left,
@@ -355,45 +364,36 @@ const AutoFace = require('./AutoFace.js');
           height: UploadedImage.storedCropperData.wrapperData.height,
         });
 
-        // the cropbox
+        // the cropbox position
         UploadedImage.callOnCrop = false;
         CROPPER.clear();
         UploadedImage.callOnCrop = false;
         CROPPER.crop();
-        // UploadedImage.callOnCrop = false;
+        // will call display mosaics from the crop event this triggers
         CROPPER.setCropBoxData(UploadedImage.storedCropperData.boxData);
-
-
-        // DISPLAY_MOSAICS('from removebg ready');
       };
-
-
     }
-    // a new image upload, no need to copy over anyt transformations
+
+    // a new image upload, no need to copy over any transformations
     else if(typeSTR == 'original') {
       console.log('new upload');
 
-      // clear dom and append new img if swapping
-      // CONTAINER_UPLOADED.innerHTML = '';
-      // CONTAINER_UPLOADED.appendChild(el);
-
+      // new upload gets autoface
       CROPPER_OPTIONS.ready = function(e){
         console.log('%c'+e.type,'color:green;');
         console.log(this.cropper);
         console.log('upload ready');
         getImageForAutoFace();
-        // no longer using autocrop, might not need the callOnCrop bool
-        // UploadedImage.callOnCrop = true;
       };
+
       // create new cropper instance for new upload
-      console.log('aspect ratio is');
-      console.log(CROPPER_OPTIONS.aspectRatio);
       CROPPER = new Cropper(IMG_EL, CROPPER_OPTIONS);
     }
 
 
-    // for dev to see the filtered iamge preview
+    // for dev clear the untiled filtered image
     SLIDER_CROPPED.innerHTML = '';
+    // for dev clear the full grab after transform to send to autoface
     document.getElementById('devImageResult').innerHTML = '';
 
   }
@@ -412,7 +412,7 @@ const AutoFace = require('./AutoFace.js');
         if (/^image\/\w+/.test(file.type)) {
           // save file to image object
           UploadedImage.file = file;
-          // revoke previous image and removedbg image if exists on each new image uploiad
+          // revoke previous image and removebg image if exists on each new image upload
           if (UploadedImage.original_uploadedImageURL) {
             URL.revokeObjectURL(UploadedImage.original_uploadedImageURL);
             // revoke if exists the remove background image
@@ -424,15 +424,9 @@ const AutoFace = require('./AutoFace.js');
 
           // create new object url for this upload
           UploadedImage.original_uploadedImageURL = URL.createObjectURL(file);
-          // for using CROPPER.replace();
           IMG_EL.src = UploadedImage.original_uploadedImageURL;
 
-          // for when nobg and original are two different img el's that get swapped
-          // let originalImg = document.createElement('img');
-          // originalImg.src = UploadedImage.original_uploadedImageURL;
-          // UploadedImage.original = originalImg;
-
-          // clear local stored mosaic adjustment values
+          // clear values pertaining to previous image upload
           UploadedImage.startFresh();
 
           // clear previous cropper instance if exists
@@ -440,7 +434,7 @@ const AutoFace = require('./AutoFace.js');
           // a new upload so type is original
           appendCropperImageToDOM('original');
 
-          // reset background
+          // reset remove background ui option
           resetRemoveBG( false );
 
           // clear file upload input for next upload
@@ -456,24 +450,31 @@ const AutoFace = require('./AutoFace.js');
     IMAGE_INPUT.parentNode.className += ' disabled';
   }
 
-
+  /**
+   * calculates the bounds of the displayed portion of the image and grabs a full cropped canvas of that area
+   * @return {[object]} [the full display as a HTMLCanvasElement, the left x coordinate, the top y coordinate]
+   */
   function getdisplayCrop(){
-    // wrapper -
+    // wrapper - the transformed image container
     let wrapper = CROPPER.getCanvasData();
     // console.log('%c wrapper', 'color:orange;');
     // console.table(wrapper);
+
     // let imgData = CROPPER.getImageData();
     // console.log('%c img data', 'color:orange;');
     // console.table(imgData);
-    // store current data
+
+    // grab current data
     let stored = CROPPER.getData();
     // console.log('%c Data', 'color:orange;');
     // console.table(stored);
-    //
+
     // container - the div that the image is uploaded to, overflow is set to hidden
     let cd = CROPPER.getContainerData();
     // console.log('%c container data', 'color:orange;');
     // console.table(cd);
+
+    // object to hold the visible bounds of the image
     let fullCrop = {};
 
 
@@ -496,7 +497,7 @@ const AutoFace = require('./AutoFace.js');
       fullCrop.width = ( wrapperWidth > cd.width ) ? (cd.width - fullCrop.left) : wrapper.width;
     }
 
-    // find out if the bottom of the image is out of bounds
+    // find out if the bottom of the image is out of bounds using same logic as above
     let wrapperHeight = wrapper.height + wrapper.top;
     if ( wrapper.top < 0 ){
       fullCrop.top = 0;
@@ -508,13 +509,11 @@ const AutoFace = require('./AutoFace.js');
     }
 
 
-    // console.log(`width: ${width}, height: ${height}`);
     // set triggers crop event which converts crop area to mosaic, which is unwanted right now
     UploadedImage.callOnCrop = false;
-    // change the aspect ratio to get the full display image
+    // change the aspect ratio to get the full display image from cropper getcroppedcanvas
     CROPPER.setAspectRatio(fullCrop.width/fullCrop.height);
 
-    // set triggers crop event which converts crop area to mosaic, which is unwanted right now
     UploadedImage.callOnCrop = false;
     // get the canvas of the entire displayed area
     let getFull = CROPPER.setCropBoxData(fullCrop);
@@ -529,7 +528,7 @@ const AutoFace = require('./AutoFace.js');
     };
 
 
-    // for some reason the above options clip the alpha space out of the returned canvas, seding over the incorrect image to autoface
+    // if the image is rotated the wrapper will not be fillcrop value, so if setting max dimensions this needs to be considered
     // use this if rotated
     // let ar = (fullCrop.width / fullCrop.height);
     // let rotate = {
@@ -549,18 +548,14 @@ const AutoFace = require('./AutoFace.js');
     // get the canvas
     let canvas = CROPPER.getCroppedCanvas(ops);
 
+    // restore to user crop
 
-    // test if left top 0 aligns with the container or the wrapper
-    // return canvas;
-
-    // set triggers crop event which converts crop area to mosaic, which is unwanted right now
-    UploadedImage.callOnCrop = false;
     // restore aspect ratio
+    UploadedImage.callOnCrop = false;
     CROPPER.setAspectRatio(Globals.aspectRatio);
 
-    // set triggers crop event which converts crop area to mosaic, which is unwanted right now
-    UploadedImage.callOnCrop = false;
     // restore data
+    UploadedImage.callOnCrop = false;
     CROPPER.setData(stored);
 
     return {
@@ -570,6 +565,12 @@ const AutoFace = require('./AutoFace.js');
     };
   }
 
+  /**
+   * for dev, displays the displayed image section grabbed to send to autoface to clarify wat got grabbed
+   * @param  {[HTMLImageELement]} image [the image sent to autoface]
+   * @param  {[string]} str   [for logging, description of what is calling this function]
+   * @param  {[bool]} clear [whether or not to clear the dom container element for display]
+   */
   function devDisplaySentToAutoFace(image, str, clear){
     console.log(str);
     let container = document.getElementById('devImageResult');
@@ -578,9 +579,14 @@ const AutoFace = require('./AutoFace.js');
   }
 
 
-  // gets a snap of the whole display area in case of image transformations,
-  // this sends the transformed image to autoface, instead of the default uploaded image
+  /**
+   * setups for calling autoface
+   * @param  {[type]} options [description]
+   * @return {[type]}         [description]
+   */
   function getImageForAutoFace(options) {
+    // calls functions to get a snap of the whole display area in case of image transformations,
+    // sends the transformed image to autoface, instead of the default uploaded image
 
     if(CROPPER && !CROPPER.cropped){ CROPPER.crop(); }
       // get snap of entire visible image in the display
@@ -594,7 +600,6 @@ const AutoFace = require('./AutoFace.js');
         devDisplaySentToAutoFace(newImg, 'called from getImageForAutoFace', true);
 
         newImg.onload = function() {
-          // return;
           // send transformed display to autoface to find face
           useAutoFace({
             image: newImg,
@@ -610,11 +615,13 @@ const AutoFace = require('./AutoFace.js');
           // no longer need to read the blob so it's revoked
           URL.revokeObjectURL(url);
         };
-
       });
-
   }
 
+  /**
+   * calls the autoface function
+   * @param  {[object]} options [settings to pass / append to defaults for autoface]
+   */
   function useAutoFace(options){
     console.log('calling autoface');
     // TODO: set up a loading overlay to give auto detect faces time to return
@@ -660,6 +667,10 @@ const AutoFace = require('./AutoFace.js');
       .catch(err=>{console.warn(err)});
   }
 
+  /**
+   * resets the ui display for remove bg button
+   * @param {[bool]} checked [sets the ui to match bool]
+   */
   function resetRemoveBG(checked) {
     let box = document.getElementById('useRemoveBG');
     if (box.checked != checked){box.checked = checked;}
@@ -677,8 +688,11 @@ const AutoFace = require('./AutoFace.js');
     if(!checked && btnTarget.classList.contains(classname) ){ $(btnSelector).collapse('hide'); }
   }
 
-  // call for remove background / handle background tools display
+  /**
+   * listener for handling the remove bg call / switch if already called
+   */
   document.getElementById('useRemoveBG').onchange = function(){
+    // call for remove background / handle background tools display
     let typeSTR = this.checked ? 'removebg' : 'original';
     console.log('remove bg clicked, state is ' + typeSTR);
 
@@ -687,8 +701,6 @@ const AutoFace = require('./AutoFace.js');
     // indicate if pattern will be sent to convert photo
     Globals.useBG = this.checked;
 
-    // for when the nobg and original were two separate img elements
-    // still need it for replace?
     if(CROPPER && CROPPER.cropped){
       // store current data for restoring crop box to the same spot
       // has to keep all transforms from original background to remove background
@@ -700,7 +712,6 @@ const AutoFace = require('./AutoFace.js');
         // imgData: CROPPER.getImageData(),         // uploaded image data - still unsure of how to use
         // containerData: CROPPER.getContainerData(),   // the block element parent container to the image
       };
-
     }
 
     if(this.checked){
@@ -717,30 +728,37 @@ const AutoFace = require('./AutoFace.js');
       }
     }
 
-    resetRemoveBG(this.checked);
+    resetRemoveBG(this.checked); // set visual based on check chagne
 
+    // if a switch not a call remove bg, change dom
     if( !calledRemovebg ){ appendCropperImageToDOM(typeSTR); }
   }
 
+  /**
+   * the post request for calling removebg api
+   */
   async function uploadForRemoveBG(){
 
-    let url = 'removebg/';
-    const csrftoken = getCookie('csrftoken');
-    let headers = {
+    let url = 'removebg/';                      // the view to call
+    const csrftoken = getCookie('csrftoken');   // get csrf toekent from cookies
+    let headers = {                             // set the header of what to get from the server
       'X-CSRFToken': csrftoken,
       'Accept': '*/*',
     }
 
+    // create th body of the request
     const imageField = UploadedImage.file;
     if(!imageField){  throw new Error('no uploaded image found'); }
     let formData = new FormData();
     formData.append("image_file", imageField);
 
+    // make the call
     await fetch(url, {
         method: 'POST',
         body: formData,
         headers: headers,
     })
+    // for now only handles streaming response body
     .then(resp => {
       // resp is a readable stream
       const reader = resp.body.getReader();
@@ -769,21 +787,14 @@ const AutoFace = require('./AutoFace.js');
     // save the created url to be revoked upon new upload of image
     .then(blob => {
       UploadedImage.removebg_uploadedImageURL = URL.createObjectURL(blob);
-
-      // for when nobg and original are two separate elemts to be swapped into the cropper
-      // let nobgImg = document.createElement('img');
-      // nobgImg.src = UploadedImage.removebg_uploadedImageURL;
-      // UploadedImage.removebg = nobgImg;
-
       // call apply to dom
       appendCropperImageToDOM('removebg');
+      // update api call status
       UploadedImage.removebgApiStatus = UploadedImage.statusList.success;
     });
     // .catch(console.error);
   }
 
-  // container for sliders input
-  // document.getElementById('slidersContent').onchange = handleClicks;
   // container for the cropper tools
   document.getElementById('cropToolbar').onclick = handleClicks;
   // container for mosaic tool controls
@@ -811,16 +822,16 @@ const AutoFace = require('./AutoFace.js');
 
 
     let data = {
-      main: target.getAttribute('data-main') || undefined, // instance object that has the method
-      method: target.getAttribute('data-method'), // object method to call
-      value: target.value, // value of an input tag
+      main: target.getAttribute('data-main') || undefined,       // instance object that has the method
+      method: target.getAttribute('data-method'),                // object method to call
+      value: target.value,                                       // value of an input tag
       effects: target.getAttribute('data-effects') || undefined, // does this value act on another value,
-      option: target.getAttribute('data-option') || undefined, // value to pass to method
+      option: target.getAttribute('data-option') || undefined,   // value to pass to method
       secondOption: target.getAttribute('data-second-option') || undefined // second value to pass to method
     };
     let updateMosaic = false;
 
-
+    // check which main category of command was called
     switch(data.main){
       // user changing a basic globals setting
       case 'globals':
@@ -970,8 +981,6 @@ const AutoFace = require('./AutoFace.js');
           // set ratio triggers the crop event, don't call need to call display mosaics then
           UploadedImage.callOnCrop = false;
           CROPPER.setAspectRatio(Globals.aspectRatio);
-          // let centerLEFT = currentCBD.width * .5 + currentCBD.left;
-          // let centerTOP = currentCBD.height * .5 + currentCBD.top;
 
           let newWidth = changingWidth ? currentCBD.height * Globals.aspectRatio : currentCBD.width;
           let newHeight = !changingWidth ? currentCBD.width / Globals.aspectRatio : currentCBD.height;
@@ -980,8 +989,6 @@ const AutoFace = require('./AutoFace.js');
             height: newHeight,
             left: currentCBD.left,
             top: currentCBD.top,
-            // left: changingWidth ? centerLEFT - (newWidth*.5) : currentCBD.left,
-            // top: !changingWidth ? centerTOP - (newHeight*.5) : currentCBD.top,
           };
 
           UploadedImage.callOnCrop = false;
@@ -996,22 +1003,6 @@ const AutoFace = require('./AutoFace.js');
     if(updateMosaic){
       let str = 'from click listener updateMosaic bool';
       DISPLAY_MOSAICS(str); }
-
-
-    // remove bg checkmark
-      // bg disabled = !this.checked;
-      // if checked && !Globals.sansBg
-        // make a call to remove bg and set result to sansBg
-        // call tile mosaic to display no bg mosaic
-      // if !checked
-        // change display to use bg and call tile mosaic
-    // remove bg
-      // solid or burst
-        // change globals to use solid  / burst bg
-      // swap colors
-        // switch order of color for burst
-      // make call to tile mosaic
-
   }
 
 
@@ -1027,7 +1018,7 @@ const AutoFace = require('./AutoFace.js');
           console.log(resp);
           // pass same options but use the copy canvas so the filters aren't layered on previous filters;
           let ops = Object.assign({}, UploadedImage.moasicOptions, {filterCanvas: resp} );
-          canvasPreview(ops);
+          setConversionSettings(ops);
           // for dev see what the non-tiled cropped section looks like
           SLIDER_CROPPED.innerHTML = '';
           SLIDER_CROPPED.appendChild(resp);
@@ -1092,7 +1083,7 @@ const AutoFace = require('./AutoFace.js');
         if (response.status < 200 || response.status > 200) {
           console.log('save mosaic to server not ok. Status code: ' + response.status);
           SAVE_MOSAIC.disabled = false;
-          return
+          return;
         }
         response.json().then(function(resp) {
           console.log('save mosaic came back ok: ' + resp);
