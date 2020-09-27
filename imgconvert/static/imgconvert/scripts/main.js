@@ -40,6 +40,7 @@ const AutoFace = require('./AutoFace.js');
       CONTAINER_RESULT = document.getElementById('containerResult'),      // parent of mosaic display
       PREVIEW_RESULT = document.getElementById('previewResult'),          // preview container
       SLIDER_CROPPED = document.getElementById('previewSliderResult'),    // preview the cropped non-tiled section w/ slider tweaks
+      MOSAIC_INSTANCE = null,  // variable for the mosaic instance to be callable from whole page
       /**
        * main function to convert cropped section into a mosiac and display that mosaic to the dom
        * @param  {[object]} options [options for cropper canvas, may not be used always, created for development]
@@ -249,10 +250,10 @@ const AutoFace = require('./AutoFace.js');
     let method = 'createTiles';  // holdover from testing different tiling methods, might still use it so keep the format
     if( ops.hasOwnProperty('methodname') ){ method = ops.methodname; }
 
-    // create the mosaic instance
-    let convertPhoto = new ConvertPhoto(ops);
+    // create new mosaic instance
+    MOSAIC_INSTANCE = new ConvertPhoto(ops);
     // call for the tiler
-    let mosaic = convertPhoto[method]();
+    let mosaic = MOSAIC_INSTANCE[method]();
 
     // clear the copied filtered canvas from storage
     if(UploadedImage.moasicOptions && UploadedImage.moasicOptions.hasOwnProperty('filterCanvas')){
@@ -262,6 +263,7 @@ const AutoFace = require('./AutoFace.js');
     console.log(`updating container: ${ops.targetElement.id}`);
     ops.targetElement.innerHTML = '';
     ops.targetElement.appendChild(mosaic);
+
   }
 
   // setups the color palette buttons in the dom
@@ -1054,12 +1056,11 @@ const AutoFace = require('./AutoFace.js');
 
   const SAVE_MOSAIC = document.getElementById('save');
   SAVE_MOSAIC.onclick = function(){
-    // needs a better check for accurate mosaic data
-    if(!Globals.hasOwnProperty('mosaic') || !Globals.hasOwnProperty('materials')){
-      throw new Error('no mosaic data was saved');
-    }
-    const csrftoken = getCookie('csrftoken');
+    // call to get the data
+    if(!MOSAIC_INSTANCE){ throw new Error('no mosaic data was saved'); }
+    const {materials, rgbaSTR} = MOSAIC_INSTANCE.getStorableData();
 
+    const csrftoken = getCookie('csrftoken');
     let headers = {
       'X-CSRFToken': csrftoken,
       'Accept': 'application/json, text/plain, */*',
@@ -1071,9 +1072,9 @@ const AutoFace = require('./AutoFace.js');
         method: 'POST',
         body: JSON.stringify({
           color: Globals.color,
-          mosaic: Globals.mosaic,
-          materials: Globals.materials,
           plates: Globals.plateCount,
+          mosaic: rgbaSTR,
+          'materials': materials,
         }),
         headers: headers,
         // credentials: 'same-origin',

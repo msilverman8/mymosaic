@@ -49,7 +49,8 @@
       // rgb values saved as a string python tuple. no alpha channel included
       // '(r, g, b)'
       // grouped by rows index 0 contains all tiles left to right at row 0
-      this.mosaicTileCount = [];
+      // value is a string formatted like the csv (r,g,b)
+      this.mosaicTileCountKey = [];
       // stores array of rows of tiles left to right as rgba strings
       // ready for context.fillStyle
       this.mosaicRGBAStrings = [];
@@ -267,7 +268,7 @@
           // if(color[3]<1){color = missing;}
 
           // output tile to canvas
-          mosaicContext.fillStyle = 'rgba('+ color[0] +','+ color[1] +','+ color[2] +','+ Math.ceil(color[3]/255) +')';
+          mosaicContext.fillStyle = 'rgba('+ color[0] + ', ' + color[1] + ', ' + color[2] +','+ Math.ceil(color[3]/255) +')';
           mosaicContext.fillRect((j * s) , (i * s), s, s);
 
           // for dev
@@ -310,23 +311,94 @@
       return caps;
     }
 
+    /**
+     * returns to the caller the formatted color data of the mosaic
+     * @return {[object]} [data to store in the database]
+     */
+    getStorableData(){
+      const {tileCountKey, rgbaSTR} = this.getTileData();
+      let materials = this.getBillOfMaterials(tileCountKey);
+      return {
+          'materials': materials,
+          'rgbaSTR': rgbaSTR,
+      };
+
+    }
+
+    /**
+     * gets from mosaic the color of each tile in different formats
+     * @return {[object]} returns diufferent format of color data for storage into a database
+     */
+    getTileData(){
+      console.log('getting color data');
+      let canvas = this.mosaicCanvas;
+      let imageData = canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+      // console.log(imageData);
+
+      const h = this.options.tilesY;
+      const w = this.options.tilesX;
+      let data = {
+        'imageData': imageData,
+        'tileCountKey': [],
+        'rgbaSTR': [],
+      }
+      // iterate through to get tiles
+      for (let i = 0; i < h; i++) {
+        // this.mosaicRGBAStrings[i] = [];
+        // this.mosaicTileCountKey[i] = [];
+        data.tileCountKey[i] = [];
+        data.rgbaSTR[i] = [];
+        for (let j = 0; j < w; j++) {
+          let index = ((j * this.options.tileSize) + ((i * this.options.tileSize) * canvas.width)) * 4;
+          let color = [];
+
+          // get color from stored data
+          for (let c = 0; c < 4; c++) {
+            var r = imageData[index + c];
+            if(r === undefined || r === null){
+              throw new Error('pixel in imagedata array was ' + r);
+              break;
+            }
+            color.push(r);
+          }
+
+          // format color data for database
+          let commaSeparated = color[0] + ', ' + color[1] + ', ' + color[2];
+          let rgbaString = 'rgba('+ commaSeparated +','+ Math.ceil(color[3]/255) +')';
+
+          // store data in objects
+          // this.mosaicTileCountKey[i].push('(' + commaSeparated + ')');  // formatted for csv
+          // this.mosaicRGBAStrings[i].push(rgbaString);                   // formatted for canvas context fill
+          data.tileCountKey[i].push('(' + commaSeparated + ')');  // formatted for csv
+          data.rgbaSTR[i].push(rgbaString);                       // formatted for canvas context fill
+        }
+      }
+
+      return data;
+    }
+
 
     /**
      * returns the value for the bill of materials property in the database
+     * @param {[array]} tileCountKey nested array of the colors in the mosaic as a tuple rgb string
      * @return {[object]} key: string formatted to loook like the csv (r,g,b), value: number count of how many of that color in the mosaic
      */
-    getBillOfMaterials(){
-      if(this.mosaicTileCount.length == 0){
+    getBillOfMaterials(tileCountKey){
+      if(!tileCountKey && this.mosaicTileCountKey.length == 0){
         throw new Error('No tiles were saved!');
       }
-      // count up each color
-      var index = this.options.tilesY;
-      var row = this.options.tilesX;
-      var count = {};
 
-      for (var i = 0; i < index; i++) {
-        for (var j = 0; j < row; j++) {
-          let key = this.mosaicTileCount[i][j];
+      // count up each color
+      const index = this.options.tilesY;
+      const row = this.options.tilesX;
+      let count = {};
+
+      for (let i = 0; i < index; i++) {
+        for (let j = 0; j < row; j++) {
+
+          // get the key for materials and count value of each tile
+          // let key = this.mosaicTileCountKey[i][j];
+          let key = tileCountKey[i][j];
           if(count.hasOwnProperty(key)){
             count[key] += 1;
           }else{
@@ -694,7 +766,7 @@
     //   // var index = x + (y * width); // image data
     //
     //   // set up storage of mosaic data
-    //   this.mosaicTileCount = [];
+    //   this.mosaicTileCountKey = [];
     //   this.mosaicRGBAStrings = [];
     //   this.mosaicImageData = []; // 2d matrix notation
     //   var x, y, clusterData, averageColor, commaSeparated, color;
@@ -703,7 +775,7 @@
     //   // iterate through to get tiles
     //   for (var i = 0; i < this.options.tilesY; i++) {
     //     // store colors
-    //     this.mosaicTileCount[i] = [];
+    //     this.mosaicTileCountKey[i] = [];
     //     this.mosaicRGBAStrings[i] = [];
     //     for (var j = 0; j < this.options.tilesX; j++) {
     //       // get cluster
@@ -717,7 +789,7 @@
     //       color = 'rgba(' + commaSeparated + ', ' + this.options.opacity + ')';
     //       // store tile color
     //       // this.mosaicImageData[(i * this.options.tilesX) + j].push([averageColor.r, averageColor.g, averageColor.b, this.options.opacity]);
-    //       this.mosaicTileCount[i].push('(' + commaSeparated + ')');
+    //       this.mosaicTileCountKey[i].push('(' + commaSeparated + ')');
     //       this.mosaicRGBAStrings[i].push(color);
     //       // output tile to canvas
     //       // output canvas may be different size than the clustered canvas
