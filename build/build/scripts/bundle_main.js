@@ -108,6 +108,8 @@ var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
         // calculating here based on display size and using set cropbox on main
         this.maxWidth = this.options.displaySize.width;
         this.maxHeight = this.options.displaySize.height;
+        this.adjustTop = this.options.displaySize.top;
+        this.adjustLeft = this.options.displaySize.left;
       }
     }
     /**
@@ -216,27 +218,13 @@ var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
 
         return false;
       }
-      /**
-       * calculations necessary to get the new crop area bounds based on received
-       * detected face bounds
-       * @param  {[object]} facebounds [x, y, w, h] of the detected face location
-       * @return {[object]}            [top or y, left or x, width, height] of the new cropping area bounds
-       */
-
     }, {
-      key: "_getAutoCropBounds",
-      value: function _getAutoCropBounds(facebounds) {
-        // no faces detected
-        if (!facebounds) {
-          console.log('no faces detected');
-          return false;
-        } // get the values for the merged faces calculated bounds
-
-
-        var w = facebounds.w,
-            h = facebounds.h,
-            x = facebounds.x,
-            y = facebounds.y; // get aspect ratio
+      key: "_getWidthHeightForAspectRatio",
+      value: function _getWidthHeightForAspectRatio(params) {
+        var w = params.w,
+            h = params.h,
+            x = params.x,
+            y = params.y; // get aspect ratio
 
         var ar = this.options.aspectRatio; // final dimensions
 
@@ -255,51 +243,71 @@ var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
 
 
         var outputX = Math.max(0, x - (outputWidth - w) * 0.5);
-        var outputY = Math.max(0, y - (outputHeight - h) * 0.5); // dictionary formatted specifically for cropper
+        var outputY = Math.max(0, y - (outputHeight - h) * 0.5);
+        return {
+          'h': outputHeight,
+          'w': outputWidth,
+          'x': outputX,
+          'y': outputY
+        };
+      }
+      /**
+       * calculations necessary to get the new crop area bounds based on received
+       * detected face bounds
+       * @param  {[object]} facebounds [x, y, w, h] of the detected face location
+       * @return {[object]}            [top or y, left or x, width, height] of the new cropping area bounds
+       */
 
+    }, {
+      key: "_getAutoCropBounds",
+      value: function _getAutoCropBounds(facebounds) {
+        // no faces detected
+        if (!facebounds) {
+          console.log('no faces detected');
+          return false;
+        } // get the output dimensions for an aspect ratio'd box that gits in the image bounds
+
+
+        var fb = this._getWidthHeightForAspectRatio(facebounds);
+
+        var w = fb.w,
+            h = fb.h,
+            x = fb.x,
+            y = fb.y; // add padding around face box
+
+        var p = .5;
+        var padding = Math.ceil(Math.min(w, h) * p); // adjusted left/top for when display container is bigger than the image size
+
+        var px = this.adjustLeft ? x + this.adjustLeft : x;
+        var ph = this.adjustTop ? y + this.adjustTop : y;
         var cdata = {
-          left: outputX,
-          top: outputY,
-          width: outputWidth,
-          height: outputHeight
-        }; // add padding around face box
-        // const p = 0; // .08;
-        // const padding = Math.ceil(Math.min(outputWidth, outputHeight) * p);
-        //
-        // let paddedWidth = outputWidth + padding;
-        // let paddedHeight = outputHeight + padding;
-        // // make sure padding doesn't make the area exceed original image
-        // let usePadding = (paddedWidth <= this.options.displaySize.width && paddedHeight <= this.options.displaySize.height);
-        //
-        // let cdata;
-        // if(usePadding) {
-        //   cdata = {
-        //     left: Math.max(0, (outputX - padding)),
-        //     top: Math.max(0, (outputY - padding)),
-        //     width: paddedWidth,
-        //     height: paddedHeight,
-        //   };
-        // }
+          'w': Math.min(this.maxWidth, w + padding),
+          'h': Math.min(this.maxHeight, h + padding)
+        }; // center bounds in image as much as possible
 
-        console.table({
-          'x, y': [x, y],
-          'face': [w, h],
-          'imag': [this.options.displaySize.width, this.options.displaySize.height],
-          'n xy': [outputX, outputY],
-          'finl': [outputWidth, outputHeight],
-          'r XY': [cdata.left, cdata.top],
-          'r WH': [cdata.width, cdata.height]
-        }); // left and top is for set crop box
+        cdata.x = Math.max(0, px - (cdata.w - w) * 0.5);
+        cdata.y = Math.max(0, ph - (cdata.h - h) * 0.5);
+
+        var paddedOutputs = this._getWidthHeightForAspectRatio(cdata);
+
+        var pdata = {
+          left: paddedOutputs.x,
+          top: paddedOutputs.y,
+          width: paddedOutputs.w,
+          height: paddedOutputs.h
+        }; // pdata = facebounds;
+
+        console.table(pdata); // left and top is for set crop box
         // x and y is for set data
 
         if (this.options.useOriginal) {
-          cdata.x = cdata.left;
-          cdata.y = cdata.top;
-          delete cdata.left;
-          delete cdata.top;
+          pdata.x = pdata.left;
+          pdata.y = pdata.top;
+          delete pdata.left;
+          delete pdata.top;
         }
 
-        return cdata;
+        return pdata;
       } // end get crop area
 
       /**
@@ -1193,12 +1201,6 @@ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefau
 
 var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/slicedToArray"));
 
-var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/classCallCheck"));
-
-var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
-
-var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
-
 function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
 
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
@@ -1206,168 +1208,147 @@ function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o =
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
 // data pertaining to the uploaded image, to be reset on each new image upload
-(function (global, factory) {
-  (typeof exports === "undefined" ? "undefined" : (0, _typeof2["default"])(exports)) === 'object' && typeof module !== 'undefined' ? module.exports = factory() : typeof define === 'function' && define.amd ? define(factory) : (global = global || self, global.RawImage = factory());
-})(void 0, function () {
-  'use strict';
+(function () {
+  "use strict";
 
-  var Globals = require('./globals.js');
-
-  var RawImage = /*#__PURE__*/function () {
-    function RawImage(image) {
-      (0, _classCallCheck2["default"])(this, RawImage);
-      this.image = image; // the crop event is called before ready on some initial options settings
-      // endsure mosaic preview is not called too often / early with setting this boolean to keep track
-
-      this.callOnCrop = false; // handle all filter checks / objects
-      // this._useOneFilter = false;           // which key to use to get the filter list
-
-      this.applyFilters = false; // a bool is true if a value in the filter list is not it's initial value
-
-      this._baseFilterValues = {}; // gets the initial value of all filters to determine if applyFilters should be true
-      // initialize the filter list storage
-
-      this.initFilterList(); // this.handleImage(options);
-    } // is called onload of image
+  var Globals = require('./globals.js'); // object to keep cuurently active image adjustments all in one palce
 
 
-    (0, _createClass2["default"])(RawImage, [{
-      key: "handleImage",
-      value: function handleImage(options) {
-        console.log('initiating image obj');
+  var UploadedImage = {
+    original_uploadedImageURL: null,
+    // a createObjectURL of the original uploaded image, neccessary for CROPPER to work
+    removebg_uploadedImageURL: null,
+    // see above, but for the image returned from the remove background api
+    file: null,
+    // the uploaded file
+    // original: null,                   // img el of the original file
+    // removebg: null,                   // img el of the nobg
+    storedCropperData: {},
+    // store cropper data for switching betweent nobg and original but keeping transforms
+    moasicOptions: {},
+    // the options relevant to creating the user's mosaic, used for copying the canvas for filter applications
+    callOnCrop: false,
+    // bool for CROPPER, sometimes the crop event fires before the ready event
+    usePreset: false,
+    // boll to apply a preset filter to mosaic'd image
+    preset: '',
+    // string name of the preset filter to apply
+    applyFilters: false,
+    // a bool is true if a value in the filter list is not it's initial value
+    _baseFilterValues: {},
 
-        if (!options || options.image) {
-          throw new Error('invalid image object');
-          console.log(image);
+    // gets the initial value of all filters to determine if applyFilters should be true
+    get filterList() {
+      return this._filterList;
+    },
+
+    // set the value for the specific filter
+    setFilterList: function setFilterList(key, value) {
+      this._filterList[key] = value;
+
+      this._updateApplyFilters();
+    },
+    // initialize the filter handling objects
+    initFilterList: function initFilterList() {
+      this._filterList = {};
+      var list = document.getElementById('slidersContent').querySelectorAll('[data-option="reset"]');
+
+      var _iterator = _createForOfIteratorHelper(list),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var el = _step.value;
+          var name = el.getAttribute('data-method');
+          var val = el.value;
+          this._filterList[name] = val;
+          this._baseFilterValues[name] = val;
         }
-
-        this.image = options.image; // set the default scale factor of the image vs display
-        // not using scale factor anymore
-        // this.scaleFactor = this.image.naturalWidth / this.imageContainer.clientWidth;
-        // keep track of the center of the crop box for this image
-        // this.cropboxCenter = {
-        //   x: this.image.parentElement.clientWidth * .5,
-        //   y: this.image.parentElement.clientHeight * .5,
-        // };
-        // make sure display is no larger than the natural size of the image???
-        // might be needed for the cropper box data ???
-        // needs testing
-        // this.image.parentElement.style.maxHeight = this.image.naturalHeight
-        // this.image.parentElement.style.maxWidth = this.image.naturalWidth;
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
       }
-    }, {
-      key: "setFilterList",
-      // store speparate slider values for each color palette
-      value: function setFilterList(key, value) {
-        // set the value for this filter for the selected color palette choice
-        // this._filterList[Globals.color][key] = value;
-        this._filterList[key] = value;
 
-        this._updateApplyFilters();
-      } // initialize the filter handling objects
+      this.resetAllFilters();
+      this.resetPresets();
+    },
+    // looks through all slider filter stores, if a value is not the reset value apply filters is true
+    _updateApplyFilters: function _updateApplyFilters(key, value) {
+      for (var _i = 0, _Object$entries = Object.entries(this._filterList); _i < _Object$entries.length; _i++) {
+        var _Object$entries$_i = (0, _slicedToArray2["default"])(_Object$entries[_i], 2),
+            _key = _Object$entries$_i[0],
+            _value = _Object$entries$_i[1];
 
-    }, {
-      key: "initFilterList",
-      value: function initFilterList() {
-        this._filterList = {};
-        var list = document.getElementById('slidersContent').querySelectorAll('[data-option="reset"]');
-
-        var _iterator = _createForOfIteratorHelper(list),
-            _step;
-
-        try {
-          for (_iterator.s(); !(_step = _iterator.n()).done;) {
-            var el = _step.value;
-            var name = el.getAttribute('data-method');
-            var val = el.value;
-            this._filterList[name] = val;
-            this._baseFilterValues[name] = val;
-          }
-        } catch (err) {
-          _iterator.e(err);
-        } finally {
-          _iterator.f();
+        if (this._filterList[_key] != this._baseFilterValues[_key]) {
+          this.applyFilters = true;
+          break;
         }
 
-        this.resetAllFilters();
-      } // looks through all slider filter stores, if a value is not the reset value apply filters is true
-
-    }, {
-      key: "_updateApplyFilters",
-      value: function _updateApplyFilters(key, value) {
-        for (var _i = 0, _Object$entries = Object.entries(this._filterList); _i < _Object$entries.length; _i++) {
-          var _Object$entries$_i = (0, _slicedToArray2["default"])(_Object$entries[_i], 2),
-              _key = _Object$entries$_i[0],
-              _value = _Object$entries$_i[1];
-
-          if (this._filterList[_key] != this._baseFilterValues[_key]) {
-            this.applyFilters = true;
-            break;
-          }
-
-          this.applyFilters = false;
-        }
-      } // resets all filter values to their initial value
-
-    }, {
-      key: "resetAllFilters",
-      value: function resetAllFilters() {
-        for (var _i2 = 0, _Object$entries2 = Object.entries(this._filterList); _i2 < _Object$entries2.length; _i2++) {
-          var _Object$entries2$_i = (0, _slicedToArray2["default"])(_Object$entries2[_i2], 2),
-              key = _Object$entries2$_i[0],
-              value = _Object$entries2$_i[1];
-
-          this._filterList[key] = this._baseFilterValues[key];
-          document.getElementById(key + "Range").value = this._baseFilterValues[key];
-        }
-
-        this._updateApplyFilters();
-      } // // initialize the filter handling objects
-      // initFilterListByColor(){
-      //   this._filterList = {};
-      //   let list = document.getElementById('slidersContent').querySelectorAll('[data-option="reset"]');
-      //   for (let color of Object.keys(Globals.colorData)){
-      //     this._filterList[color] = {};
-      //     for ( let el of list ) {
-      //       let name = el.getAttribute('data-method');
-      //       let val = el.value
-      //       this._filterList[color][name] = val;
-      //       this._baseFilterValues[name] = val;
-      //     }
-      //   }
-      //
-      //   console.table(this._filterList);
-      // }
-      // initCropperData(toStore){
-      //   this.cropperData = Object.assign({}, toStore);
-      //   console.log('storing ');
-      //   console.table(toStore);
-      //   console.table(this.cropperData);
-      // }
-      // image instance created
-      // sent to auto face
-      // on return store the data received
-      // UPLOADED_IMAGE.cropperData {box, data, the display container?????}
-      // big data distance to the top of the cropbox >= box distance
-      // if false
-      // auto crop should happen?
-      // store that cropbox data ? or still regulate data
-      //
-
-    }, {
-      key: "filterList",
-      get: function get() {
-        // return this._filterList[Globals.color];
-        return this._filterList;
+        this.applyFilters = false;
       }
-    }]);
-    return RawImage;
-  }();
+    },
+    // resets all filter values to their initial value
+    resetAllFilters: function resetAllFilters() {
+      for (var _i2 = 0, _Object$entries2 = Object.entries(this._filterList); _i2 < _Object$entries2.length; _i2++) {
+        var _Object$entries2$_i = (0, _slicedToArray2["default"])(_Object$entries2[_i2], 2),
+            key = _Object$entries2$_i[0],
+            value = _Object$entries2$_i[1];
 
-  return RawImage;
-});
+        this._filterList[key] = this._baseFilterValues[key];
+        document.getElementById(key + "Range").value = this._baseFilterValues[key];
+      }
 
-},{"./globals.js":4,"@babel/runtime/helpers/classCallCheck":10,"@babel/runtime/helpers/createClass":11,"@babel/runtime/helpers/interopRequireDefault":12,"@babel/runtime/helpers/slicedToArray":17,"@babel/runtime/helpers/typeof":19}],4:[function(require,module,exports){
+      this._updateApplyFilters();
+    },
+    // resets presets (eventually reset the DOM when active present style happens)
+    resetPresets: function resetPresets() {
+      this.usePreset = false;
+      this.preset = '';
+    },
+    // all resets to be made on new image upload
+    startFresh: function startFresh() {
+      // reset image filters
+      this.resetAllFilters(); // reset preset buttons
+
+      this.resetPresets(); // reset the removebg api status
+
+      this.removebgApiStatus = this.statusList.ready; // the transforms of the cropper instance on the image
+      // not using it right now?
+
+      this.storedCropperData = {};
+    },
+    // list of statuses for checking on the status of the removeapi call
+    statusList: {
+      ready: 'ready',
+      pending: 'pending',
+      success: 'success',
+      // types of errors should be added and checked for later
+      error: 'error'
+    },
+
+    // get and set the status of the call to removebg api
+    get removebgApiStatus() {
+      return this._removebgApiStatus;
+    },
+
+    set removebgApiStatus(status) {
+      this._removebgApiStatus = status;
+    },
+
+    // initial values needed to be set for the UploadedImage obkect
+    init: function init() {
+      // set initial removebgapi status
+      this.removebgApiStatus = this.statusList.ready; // initialize the filter list storage
+
+      this.initFilterList();
+    }
+  };
+  UploadedImage.init();
+  module.exports = UploadedImage;
+})();
+
+},{"./globals.js":4,"@babel/runtime/helpers/interopRequireDefault":12,"@babel/runtime/helpers/slicedToArray":17}],4:[function(require,module,exports){
 "use strict";
 
 (function () {
@@ -1544,22 +1525,26 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
+var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
+
+var _asyncToGenerator2 = _interopRequireDefault(require("@babel/runtime/helpers/asyncToGenerator"));
+
 var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/slicedToArray"));
 
 var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
 
-var _ConvertPhoto = _interopRequireDefault(require("./ConvertPhoto.js"));
-
-var _AutoFace = _interopRequireDefault(require("./AutoFace.js"));
-
-var _RawImage = _interopRequireDefault(require("./RawImage.js"));
-
 // imports
 var Globals = require('./globals.js');
 
-// 3rd party imports
+var UploadedImage = require('./UploadedImage.js');
+
+var ConvertPhoto = require('./ConvertPhoto.js');
+
+var AutoFace = require('./AutoFace.js'); // 3rd party imports
 // import Cropper from 'cropperjs';
 // const RgbQuant = require('rgbquant');
+
+
 (function (window) {
   'use strict'; // get window objects
   // 3rd party
@@ -1574,12 +1559,13 @@ var Globals = require('./globals.js');
 
     try {
       var cd = JSON.parse(document.getElementById(jsonValueID).textContent);
-      Globals.colorData = cd;
-      Globals.color = 'CL'; // should get the value from the ciews template defaults value
+      Globals.colorData = cd; // set globals object of palette choices
 
-      Globals.resetPalette(); // for dev
+      Globals.color = 'CL'; // should eventually get this value from the views template defaults value
 
-      displayPalette();
+      Globals.resetPalette(); // initialize some globals objects
+
+      displayPalette(); // populate the dom with the palette buttons
     } catch (e) {
       console.warn(e);
     } // initialize the bg pattern / any other globals defaults here, get the defaults from django views
@@ -1590,31 +1576,38 @@ var Globals = require('./globals.js');
 
 
   var URL = window.URL || window.webkitURL,
-      CONTAINER_UPLOADED = document.getElementById('containerUploaded'),
-      //uploaded image container
+      // for ie
+  CONTAINER_UPLOADED = document.getElementById('containerUploaded'),
+      // uploaded image container
+  IMG_EL = document.getElementById('imgUploaded'),
+      // the HTMLImageELement for the uploaded image
   CONTAINER_RESULT = document.getElementById('containerResult'),
       // parent of mosaic display
   PREVIEW_RESULT = document.getElementById('previewResult'),
       // preview container
   SLIDER_CROPPED = document.getElementById('previewSliderResult'),
       // preview the cropped non-tiled section w/ slider tweaks
-  UPLOADED_IMAGE = new _RawImage["default"]('none'),
-      ALL_UPLOADS = [],
-      // options for the cropper object
-  DISPLAY_MOSAICS = function DISPLAY_MOSAICS(options) {
-    console.log(options); // called when the crop box has moved to a new area
 
-    console.log('*****************************');
-    console.log('displaying mosaics');
-    console.log('converting for sample default preview'); // display raw preview
+  /**
+   * main function to convert cropped section into a mosiac and display that mosaic to the dom
+   * @param  {[object]} options [options for cropper canvas, may not be used always, created for development]
+   * @return {[undefined]}      [doesn't return anything]
+   */
+  DISPLAY_MOSAICS = function DISPLAY_MOSAICS(options) {
+    // should be called when new pixels in crop box area and the mosaic display needs refreshed
+    console.log(options);
+    console.log('--- display mosaics called ---'); // first call to conversion is for the preview beside the upload image, this mosaic should be filter free
+
+    console.log('- converting for sample default preview -'); // display raw preview
     // uses default cropper canvas options to optain a canvas
 
     canvasPreview({
       targetElement: PREVIEW_RESULT,
       tileSize: Math.max(1, Math.floor(PREVIEW_RESULT.clientWidth / Globals.x)),
       saveCanvas: false
-    });
-    console.log('converting for main mosaic container'); // display main alterable mosaic
+    }); // second call to conversion for a larger preview that can be altered
+
+    console.log('- converting for main mosaic container -'); // display main alterable mosaic
     // CONTAINER_RESULT.innerHTML = '';
 
     var defaults = {
@@ -1622,17 +1615,24 @@ var Globals = require('./globals.js');
       tileSize: 8,
       saveCanvas: true
     };
-    canvasPreview(defaults); // getCropboxCenter();
+    canvasPreview(defaults); // there are no more changes so no need to save again.
 
     SAVE_MOSAIC.disabled = false;
   },
-      DEFAULT_READY = function DEFAULT_READY(e) {
+
+  /**
+   * a default ready callback for the cropper ready event
+   * @param  {[event]} e [croppers custom event]
+   */
+  DEFAULT_READY = function DEFAULT_READY(e) {
     console.log('%c' + e.type, 'color:green;');
+    console.log('default ready');
     var str = 'from default ready';
-    DISPLAY_MOSAICS(str);
-    UPLOADED_IMAGE.callOnCrop = true;
+    DISPLAY_MOSAICS(str); // UploadedImage.callOnCrop = true;
   },
-      CROPPER_OPTIONS = {
+      // options for the cropper object
+  // check the docs for clarification on these
+  CROPPER_OPTIONS = {
     aspectRatio: Globals.aspectRatio,
     viewMode: 2,
     ready: DEFAULT_READY,
@@ -1640,105 +1640,55 @@ var Globals = require('./globals.js');
     autoCropArea: .01,
     zoomOnWheel: false,
     zoomOnTouch: false,
+    // cropper events
     cropstart: function cropstart(e) {
-      console.log('%c' + e.type, 'color:green;'); // console.log(e.type, e.detail.action);
+      console.log('%c' + e.type, 'color:green;');
+      console.log('%c' + e.detail.action, 'color:green;');
     },
     cropmove: function cropmove(e) {
-      console.log('%c' + e.type, 'color:orange;'); // so display mosaic isn;t calle da million times, if a move cropend will catch it
-
-      UPLOADED_IMAGE.callOnCrop = false; // console.log(e.type, e.detail.action);
-      // let wrapper = CROPPER.getCanvasData();
-      // UPLOADED_IMAGE.cropperData.wrapper = Object.assign({},wrapper);
-      // console.log(' left '+wrapper.left);
-      // console.log(' width '+wrapper.width);
+      console.log('%c' + e.type, 'color:orange;');
+      console.log('%c' + e.detail.action, 'color:orange;');
     },
     cropend: function cropend(e) {
       console.log('%c' + e.type, 'color:red;');
+      console.log('%c' + e.detail.action, 'color:red;');
       var str = 'from cropend';
       DISPLAY_MOSAICS(str);
     },
     crop: function crop(e) {
-      console.log('%c' + e.type, 'color:blue;'); // console.log(e.type, e.detail);
-      // only if autocrop is true, this will initialize cropper
-      // if(!CROPPER.cropped){CROPPER.setData( {x:0,y:0,width:0, height:0} );}
-      // when window is resized
+      console.log('%c' + e.type, 'color:blue;'); // bool so that if a chain of cropper methods are called the mosaic will only be updated once
 
-      var _CROPPER$getImageData = CROPPER.getImageData(),
-          naturalWidth = _CROPPER$getImageData.naturalWidth,
-          width = _CROPPER$getImageData.width; // bad math fix this
-      // UPLOADED_IMAGE.scaleFactor = naturalWidth / width;
-      // don't call this when ready will fire directly after(when CROPPER.autocrop == true
-      // && CROPPER.setData() is called sometimes? )
-
-
-      if (UPLOADED_IMAGE.callOnCrop) {
+      if (UploadedImage.callOnCrop) {
         var str = 'from crop';
         DISPLAY_MOSAICS(str);
       }
 
-      UPLOADED_IMAGE.callOnCrop = true;
+      UploadedImage.callOnCrop = true;
     },
     zoom: function zoom(e) {
-      console.log('%c' + e.type, 'color:purple;'); // console.log(e.type, e.detail.ratio);
-      // DISPLAY_MOSAICS();
+      console.log('%c' + e.type, 'color:purple;');
     }
   },
       // keep track of image upload object values
-  CROPPER; // IMAGE_CROPPER_DATA = [CROPPER.getImageData()],
-  // CANVAS_CROPPER_DATA = [CROPPER.getCanvasData()];
-  // function getCropboxCenter() {
-  //   // get the center of the crop box to store as zoom to value
-  //   if(!CROPPER.cropped || !UPLOADED_IMAGE){ return; }
-  //
-  //   let cbd = CROPPER.getCropBoxData();
-  //   let {left, top, width, height} = cbd;
-  //   UPLOADED_IMAGE.cropboxCenter = {
-  //     x: left + (width * .5),
-  //     y: top + (height * .5),
-  //   }
-  //
-  //   console.log('-------------');
-  //   console.log('cropbox center');
-  //   console.table(UPLOADED_IMAGE.cropboxCenter);
-  //   console.log('-------------');
-  //
-  //   let wrapper = CROPPER.getCanvasData();
-  //   let image = CROPPER.getImageData();
-  //   let d = CROPPER.getData();
-  //   let c = CROPPER.getContainerData();
-  //
-  //   let table = [
-  //       ['name', 'x or left', 'y or top', 'width', 'height'],
-  //       ['data', d.x+'', d.y+'', d.width+'', d.height+''],
-  //       ['container', '','', c.width+'', c.height+''],
-  //   ];
-  //
-  //   let prevZoom = d.y - cbd.top;
-  //
-  //   console.log('data top '+d.y);
-  //   console.log('crop top '+cbd.top);
-  //   console.log('canv top '+wrapper.top);
-  //   console.log('crop * factor '+cbd.top*UPLOADED_IMAGE.scaleFactor);
-  //   console.log('d-c ', prevZoom);
-  //
-  //   // let table = [
-  //   //   ['name', 'x or left', 'y or top', 'width', 'height'],
-  //   //   ['cropbox', left+'', top+'', width+'', height+''],
-  //   //   ['wrapper', wrapper.left+'', wrapper.top+'', wrapper.width+'', wrapper.height+''],
-  //   //   ['image', image.left+'', image.top+'', image.width+'', image.height+''],
-  //   //   ['data', d.x+'', d.y+'', d.width+'', d.height+''],
-  //   // ];
-  //
-  //   // console.log('----    all together    ---');
-  //   // console.table(table);
-  // }
-  // get a canvas of the region outlined by the cropbox
+  CROPPER; // the cropper instance
 
+
+  var IMAGE_INPUT = document.getElementById('importImage'); // the input for the uploaded photot
+
+  /**
+   * a function to call cropper's getCroppedCanvas inchludes some default options
+   * cropper docs reccomend a max width and height value so a canvas is never returned blank if region is too large
+   * setting these values causes a rotated image to return with incorrect bounds, making the result different from the crop box region
+   * @param  {[object]} options [cropper getCroppedCanvas options]
+   * @return {[HTMLCanvasElement]}  [returns the cropped region of the uploaded image as visialized by cropper's cropbox as a canvas element]
+   */
 
   function getCropperCanvas(options) {
+    // setting the max values like this causes problems, leaving it commented out for now
+    // get a canvas of the region outlined by the cropbox
     // set maxWidth to not exceed the naturalWidth
-    var boxD = CROPPER.getCropBoxData(); // let maxWidth = boxD.width * UPLOADED_IMAGE.scaleFactor;
-    // let maxHeight = boxD.height * UPLOADED_IMAGE.scaleFactor;
+    var boxD = CROPPER.getCropBoxData(); // let maxWidth = boxD.width * UploadedImage.scaleFactor;
+    // let maxHeight = boxD.height * UploadedImage.scaleFactor;
 
     var useOptions = options && (0, _typeof2["default"])(options) == 'object' ? true : false;
     console.log('---------------- cropper canvas extract ----------------------'); // console.log(`use passed options for cropper? ${useOptions}`);
@@ -1751,10 +1701,10 @@ var Globals = require('./globals.js');
       // maxWidth: maxWidth,
       // maxHeight: maxHeight,
       imageSmoothingEnabled: true,
-      imageSmoothingQuality: 'high',
-      // one of ['low', 'medium', 'high']
-      maxWidth: 4096,
-      maxHeight: 4096
+      imageSmoothingQuality: 'high' // one of ['low', 'medium', 'high']
+      // maxWidth: 4096,
+      // maxHeight: 4096,
+
     };
     var ops = defaults;
 
@@ -1808,22 +1758,22 @@ var Globals = require('./globals.js');
     if (!ops.hasOwnProperty('canvas')) {
       console.log('getting default canvas');
       ops.canvas = getCropperCanvas();
-    } // store options for this image
+    } // store options for this image, preview does not get saved
 
 
     if (useOptions && options.saveCanvas) {
-      UPLOADED_IMAGE.moasicOptions = Object.assign({}, ops);
+      UploadedImage.moasicOptions = Object.assign({}, ops);
     } // if filters have been applied, gotta apply them for this canvas
     // only apply filters to the result mosaic, not the preview
 
 
-    if (ops.targetElement == CONTAINER_RESULT && (UPLOADED_IMAGE.applyFilters || UPLOADED_IMAGE.usePreset)) {
+    if (ops.targetElement == CONTAINER_RESULT && (UploadedImage.applyFilters || UploadedImage.usePreset)) {
       // called from updating the cropper box and not from filter adjust
       // gotta apply existing stored filters
       if (!options.hasOwnProperty('filterCanvas')) {
         // regenerate canvas form new cropbox view, so canvas is null
         applyFilters(function (resp) {
-          var ops = Object.assign({}, UPLOADED_IMAGE.moasicOptions, {
+          var ops = Object.assign({}, UploadedImage.moasicOptions, {
             canvas: resp
           });
           callConversion(ops); // for dev see what the non-tiled canvas image looks like with the filters
@@ -1851,12 +1801,12 @@ var Globals = require('./globals.js');
     } // create the mosaic instance
 
 
-    var convertPhoto = new _ConvertPhoto["default"](ops); // call for the tiler
+    var convertPhoto = new ConvertPhoto(ops); // call for the tiler
 
     var mosaic = convertPhoto[method](); // clear the copied filtered canvas from storage
 
-    if (UPLOADED_IMAGE.moasicOptions && UPLOADED_IMAGE.moasicOptions.hasOwnProperty('filterCanvas')) {
-      delete UPLOADED_IMAGE.moasicOptions.filterCanvas;
+    if (UploadedImage.moasicOptions && UploadedImage.moasicOptions.hasOwnProperty('filterCanvas')) {
+      delete UploadedImage.moasicOptions.filterCanvas;
     } // add to dom
 
 
@@ -1926,11 +1876,72 @@ var Globals = require('./globals.js');
       parent.appendChild(paletteContainer);
     }
   } // end display palette
-  // listener for user uploaded image
 
 
-  var IMAGE_INPUT = document.getElementById('importImage');
-  var uploadedImageURL;
+  function appendCropperImageToDOM(typeSTR) {
+    // three scenarios
+    // 1. new upload = destry cropper and instance a new one
+    // 2. call CROPPER.replace anyway even though the images are different sizes
+    // 3. manually adjust cropper transformations and upload new img element and new cropper instance
+    console.log('appending to dom');
+    var suffix = '_uploadedImageURL';
+    var urlkey = typeSTR + suffix;
+    var src = UploadedImage[urlkey];
+    console.log('image source is');
+    console.log(src); // get transformations of curent image to apply to the impending image if swapping
+
+    if (CROPPER && CROPPER.cropped) {
+      console.log('%c--------------------------', 'color:red;');
+      console.log('switching image');
+      CROPPER.replace(src, false); // cropper ready should be the same for both images for a switch out
+
+      CROPPER.options.ready = function (e) {
+        console.log('%c' + e.type, 'color:green;');
+        console.log('ready has been reset after replace'); // set values of transforms for this image session
+        // rotate
+
+        UploadedImage.callOnCrop = false;
+        CROPPER.rotateTo(UploadedImage.storedCropperData.naturalData.rotate);
+        UploadedImage.callOnCrop = false;
+        CROPPER.setCanvasData({
+          left: UploadedImage.storedCropperData.wrapperData.left,
+          top: UploadedImage.storedCropperData.wrapperData.top,
+          width: UploadedImage.storedCropperData.wrapperData.width,
+          height: UploadedImage.storedCropperData.wrapperData.height
+        }); // the cropbox
+
+        UploadedImage.callOnCrop = false;
+        CROPPER.clear();
+        UploadedImage.callOnCrop = false;
+        CROPPER.crop(); // UploadedImage.callOnCrop = false;
+
+        CROPPER.setCropBoxData(UploadedImage.storedCropperData.boxData); // DISPLAY_MOSAICS('from removebg ready');
+      };
+    } // a new image upload, no need to copy over anyt transformations
+    else if (typeSTR == 'original') {
+        console.log('new upload'); // clear dom and append new img if swapping
+        // CONTAINER_UPLOADED.innerHTML = '';
+        // CONTAINER_UPLOADED.appendChild(el);
+
+        CROPPER_OPTIONS.ready = function (e) {
+          console.log('%c' + e.type, 'color:green;');
+          console.log(this.cropper);
+          console.log('upload ready');
+          getImageForAutoFace(); // no longer using autocrop, might not need the callOnCrop bool
+          // UploadedImage.callOnCrop = true;
+        }; // create new cropper instance for new upload
+
+
+        console.log('aspect ratio is');
+        console.log(CROPPER_OPTIONS.aspectRatio);
+        CROPPER = new Cropper(IMG_EL, CROPPER_OPTIONS);
+      } // for dev to see the filtered iamge preview
+
+
+    SLIDER_CROPPED.innerHTML = '';
+    document.getElementById('devImageResult').innerHTML = '';
+  } // listener for user uploaded image
+
 
   if (URL) {
     IMAGE_INPUT.onchange = function () {
@@ -1941,35 +1952,39 @@ var Globals = require('./globals.js');
         file = files[0]; // make sure it's an image file
 
         if (/^image\/\w+/.test(file.type)) {
-          // revoke previous if it exists
-          if (uploadedImageURL) {
-            URL.revokeObjectURL(uploadedImageURL);
-          }
+          // save file to image object
+          UploadedImage.file = file; // revoke previous image and removedbg image if exists on each new image uploiad
 
-          if (CROPPER) {
+          if (UploadedImage.original_uploadedImageURL) {
+            URL.revokeObjectURL(UploadedImage.original_uploadedImageURL); // revoke if exists the remove background image
+
+            if (UploadedImage.removebg_uploadedImageURL) {
+              URL.revokeObjectURL(UploadedImage.removebg_uploadedImageURL);
+              UploadedImage.removebg_uploadedImageURL = null;
+            }
+          } // create new object url for this upload
+
+
+          UploadedImage.original_uploadedImageURL = URL.createObjectURL(file); // for using CROPPER.replace();
+
+          IMG_EL.src = UploadedImage.original_uploadedImageURL; // for when nobg and original are two different img el's that get swapped
+          // let originalImg = document.createElement('img');
+          // originalImg.src = UploadedImage.original_uploadedImageURL;
+          // UploadedImage.original = originalImg;
+          // clear local stored mosaic adjustment values
+
+          UploadedImage.startFresh(); // clear previous cropper instance if exists
+
+          if (CROPPER && CROPPER.cropped) {
             CROPPER.destroy();
-          }
+          } // a new upload so type is original
 
-          var image = document.createElement('img');
-          image.id = 'imgUploaded';
-          CONTAINER_UPLOADED.innerHTML = '';
-          CONTAINER_UPLOADED.appendChild(image);
-          image.src = uploadedImageURL = URL.createObjectURL(file);
-          UPLOADED_IMAGE = new _RawImage["default"](image);
-          SLIDER_CROPPED.innerHTML = '';
-          document.getElementById('devImageResult').innerHTML = ''; // create new crop object tro load the image for detect face
 
-          CROPPER_OPTIONS.ready = function (e) {
-            console.log('%c' + e.type, 'color:green;');
-            CROPPER.crop();
-            useAutoFace();
-            UPLOADED_IMAGE.callOnCrop = true; // UPLOADED_IMAGE.cropperData = getStoreCropperData();
-          };
+          appendCropperImageToDOM('original'); // reset background
 
-          CROPPER = new Cropper(UPLOADED_IMAGE.image, CROPPER_OPTIONS); // clear file upload input for next upload
+          resetRemoveBG(false); // clear file upload input for next upload
 
-          IMAGE_INPUT.value = null; // clear local stored mosaic adjustment values
-          // the sliders
+          IMAGE_INPUT.value = null;
         } else {
           window.alert('Please choose an image file.');
         }
@@ -1978,56 +1993,7 @@ var Globals = require('./globals.js');
   } else {
     IMAGE_INPUT.disabled = true;
     IMAGE_INPUT.parentNode.className += ' disabled';
-  } // function getStoreCropperData(){
-  //   let display = CROPPER.getContainerData();
-  //   let cbd = CROPPER.getCropBoxData();
-  //   let cbd_r = display.width - cbd.left + cbd.width;
-  //   let cbd_b = display.height - cbd.top + cbd.height;
-  //   let wrapper = CROPPER.getCanvasData();
-  //   let wl = Math.abs(wrapper.left);
-  //   let wt = Math.abs(wrapper.top);
-  //   let wb = wrapper.height - wt - display.height;
-  //   let wr = wrapper.width - wl - display.width;
-  //   // store initial cropper data
-  //   return {
-  //     // the original uploaded image datas uses x , y unlike everything else that uses top and left
-  //     original: CROPPER.getData(),
-  //
-  //     // the image container
-  //     display: display,
-  //
-  //     // data for the display container and the coordinates of the display area in reference to the (display sized or original?) image
-  //     wrapper: {
-  //       top: wt,
-  //       left: wl,
-  //       bottom: wb,
-  //       right: wr,
-  //       width: wrapper.width,
-  //       height: wrapper.height,
-  //     },
-  //     // the corrdinates of the crop box
-  //     box: {
-  //       left: cbd.left,
-  //       top: cbd.top,
-  //       right: display.width - cbd.left + cbd.width,
-  //       bottom: display.height - cbd.top + cbd.height,
-  //     },
-  //     // center of the box in relation to the wrapper
-  //     boxCenter: {
-  //       left: (cbd.left + cbd.width * .5),
-  //       top: cbd.top + cbd.height * .5,
-  //     },
-  //
-  //     boxSides: {
-  //       left: wl + cbd.left,
-  //       top: wt + cbd.top,
-  //       right: wr + cbd_r,
-  //       bottom: wb + cbd_b,
-  //     },
-  //
-  //   };
-  // }
-
+  }
 
   function getdisplayCrop() {
     // wrapper -
@@ -2040,22 +2006,29 @@ var Globals = require('./globals.js');
 
     var stored = CROPPER.getData(); // console.log('%c Data', 'color:orange;');
     // console.table(stored);
+    //
     // container - the div that the image is uploaded to, overflow is set to hidden
 
     var cd = CROPPER.getContainerData(); // console.log('%c container data', 'color:orange;');
     // console.table(cd);
 
     var fullCrop = {}; // get the full visible area of the image as a cropped region
+    // find out if the right side of the image is out of bounds
 
     var wrapperWidth = wrapper.width + wrapper.left;
 
     if (wrapper.left < 0) {
-      fullCrop.left = 0;
+      // left side of image out of bounds, set to 0
+      fullCrop.left = 0; // if the right side of the image is out of bounds, use the display end point : else img is within bounds keep same value
+
       fullCrop.width = wrapperWidth > cd.width ? cd.width : wrapperWidth;
     } else {
-      fullCrop.left = wrapper.left;
+      // left side of image is within bounds keep the left value the same
+      fullCrop.left = wrapper.left; // if the right side of the image is out of bounds, calculate the distance to the display end point : else img is within bounds keep same value
+
       fullCrop.width = wrapperWidth > cd.width ? cd.width - fullCrop.left : wrapper.width;
-    }
+    } // find out if the bottom of the image is out of bounds
+
 
     var wrapperHeight = wrapper.height + wrapper.top;
 
@@ -2069,49 +2042,53 @@ var Globals = require('./globals.js');
     // set triggers crop event which converts crop area to mosaic, which is unwanted right now
 
 
-    UPLOADED_IMAGE.callOnCrop = false; // change the aspect ratio to get the full display image
+    UploadedImage.callOnCrop = false; // change the aspect ratio to get the full display image
 
     CROPPER.setAspectRatio(fullCrop.width / fullCrop.height); // set triggers crop event which converts crop area to mosaic, which is unwanted right now
 
-    UPLOADED_IMAGE.callOnCrop = false; // get the canvas of the entire displayed area
+    UploadedImage.callOnCrop = false; // get the canvas of the entire displayed area
 
     var getFull = CROPPER.setCropBoxData(fullCrop);
     var defaults = {
       width: fullCrop.width,
-      height: fullCrop.height,
-      maxWidth: fullCrop.width,
-      maxHeight: fullCrop.height,
-      minWidth: fullCrop.width,
-      minHeight: fullCrop.height
-    }; // for some reason the above options clip the alpha space out of the returned canvas, seding over the incorrect image to autoface
-    // use this if rotated, will have to manually adjust for zoom tho
+      height: fullCrop.height // maxWidth: fullCrop.width,
+      // maxHeight: fullCrop.height,
+      // minWidth: fullCrop.width,
+      // minHeight: fullCrop.height,
 
-    var ar = fullCrop.width / fullCrop.height;
-    var rotate = {
-      width: fullCrop.width,
-      height: fullCrop.height,
-      maxWidth: 4096,
-      maxHeight: 4096 / ar,
-      minWidth: ar,
-      minHeight: 1
-    };
-    var ops = stored.rotate != 0 ? rotate : defaults; // let ops = defaults;
-    // console.log((stored.rotate != 0) + ' - ' + typeof stored.rotate);
-    // console.table(ops);
-    // get the canvas
+    }; // for some reason the above options clip the alpha space out of the returned canvas, seding over the incorrect image to autoface
+    // use this if rotated
+    // let ar = (fullCrop.width / fullCrop.height);
+    // let rotate = {
+    //   width: fullCrop.width,
+    //   height: fullCrop.height,
+    // maxWidth: 4096,
+    // maxHeight: 4096 / ar,
+    // minWidth: ar,
+    // minHeight: 1,
+    // };
+    // let ops = stored.rotate != 0 ? rotate : defaults;
+
+    var ops = defaults; // console.log((stored.rotate != 0) + ' - ' + typeof stored.rotate);
+
+    console.table(ops); // get the canvas
 
     var canvas = CROPPER.getCroppedCanvas(ops); // test if left top 0 aligns with the container or the wrapper
     // return canvas;
     // set triggers crop event which converts crop area to mosaic, which is unwanted right now
 
-    UPLOADED_IMAGE.callOnCrop = false; // restore aspect ratio
+    UploadedImage.callOnCrop = false; // restore aspect ratio
 
     CROPPER.setAspectRatio(Globals.aspectRatio); // set triggers crop event which converts crop area to mosaic, which is unwanted right now
 
-    UPLOADED_IMAGE.callOnCrop = false; // restore data
+    UploadedImage.callOnCrop = false; // restore data
 
     CROPPER.setData(stored);
-    return canvas;
+    return {
+      canvas: canvas,
+      top: fullCrop.top,
+      left: fullCrop.left
+    };
   }
 
   function devDisplaySentToAutoFace(image, str, clear) {
@@ -2128,15 +2105,16 @@ var Globals = require('./globals.js');
 
 
   function getImageForAutoFace(options) {
-    if (!CROPPER.cropped) {
+    if (CROPPER && !CROPPER.cropped) {
       CROPPER.crop();
     } // get snap of entire visible image in the display
 
 
-    var canvas = getdisplayCrop();
+    var results = getdisplayCrop();
+    var canvas = results.canvas;
     canvas.toBlob(function (blob) {
-      var newImg = document.createElement('img');
       var url = URL.createObjectURL(blob);
+      var newImg = document.createElement('img');
       newImg.src = url; // for dev, display the image that was sent to confirm the section was grabbed correctly
 
       devDisplaySentToAutoFace(newImg, 'called from getImageForAutoFace', true);
@@ -2149,7 +2127,9 @@ var Globals = require('./globals.js');
           useOriginal: false,
           displaySize: {
             width: canvas.width,
-            height: canvas.height
+            height: canvas.height,
+            top: results.top,
+            left: results.left
           }
         }); // no longer need to read the blob so it's revoked
 
@@ -2163,7 +2143,7 @@ var Globals = require('./globals.js');
     // get the auto crop bound if there are faces
 
     var defaults = {
-      image: UPLOADED_IMAGE.image,
+      image: UploadedImage.file,
       aspectRatio: Globals.aspectRatio,
       useOriginal: true
     };
@@ -2177,7 +2157,7 @@ var Globals = require('./globals.js');
 
     devDisplaySentToAutoFace(ops.image, 'called from AutoFace promise return', false); // get the bounds of the faceapi calculated to the passed aspect ratio
 
-    new _AutoFace["default"](ops).results.then(function (resp) {
+    new AutoFace(ops).results.then(function (resp) {
       console.log('-- autoface promise returned ---');
 
       if (resp) {
@@ -2198,34 +2178,162 @@ var Globals = require('./globals.js');
     })["catch"](function (err) {
       console.warn(err);
     });
-  } // checkbox for remobe bg
+  }
+
+  function resetRemoveBG(checked) {
+    var box = document.getElementById('useRemoveBG');
+
+    if (box.checked != checked) {
+      box.checked = checked;
+    }
+
+    var btn = document.getElementById('removeBG');
+    var btnSelector = btn.getAttribute('data-target');
+    var classname = 'show';
+    var btnTarget = document.querySelector(btnSelector); // have check enable / disable button
+
+    btn.disabled = !checked; // close dropdown if open and use removed bg is no longer selected
+
+    if (!checked && btnTarget.classList.contains(classname)) {
+      $(btnSelector).collapse('hide');
+    }
+  } // call for remove background / handle background tools display
 
 
   document.getElementById('useRemoveBG').onchange = function () {
-    console.log('check changed');
-    console.log('checked is ' + this.checked);
-    var btn = document.getElementById('removeBG');
-    var classname = 'show';
-    var btnSelector = btn.getAttribute('data-target');
-    var btnTarget = document.querySelector(btnSelector); // have check enable / disable button
+    var typeSTR = this.checked ? 'removebg' : 'original';
+    console.log('remove bg clicked, state is ' + typeSTR);
+    var calledRemovebg = false; // indicate if pattern will be sent to convert photo
 
-    btn.disabled = !this.checked;
-    Globals.useBG = this.checked;
+    Globals.useBG = this.checked; // for when the nobg and original were two separate img elements
+    // still need it for replace?
 
-    if (this.checked) {// if checked
+    if (CROPPER && CROPPER.cropped) {
+      // store current data for restoring crop box to the same spot
+      // has to keep all transforms from original background to remove background
+      UploadedImage.storedCropperData = {
+        naturalData: CROPPER.getData(),
+        // the cropbox position / other data in relation to original image size
+        wrapperData: CROPPER.getCanvasData(),
+        // the image wrapper - holds all transform data in relation to the container / display image
+        boxData: CROPPER.getCropBoxData() // the cropbox position in relation to the container parent display div
+        // imgData: CROPPER.getImageData(),         // uploaded image data - still unsure of how to use
+        // containerData: CROPPER.getContainerData(),   // the block element parent container to the image
+
+      };
+    }
+
+    if (this.checked) {
       // checked if called remove bg yet
-      // call remove bg on original image
-    } //  if dropdown is open, close it
-    else if (btnTarget.classList.contains(classname)) {
-        $(btnSelector).collapse('hide');
-      } // call re-tile becuase background has changed
+      if (UploadedImage.removebgApiStatus === UploadedImage.statusList.ready) {
+        // make request to removebg API
+        UploadedImage.removebgApiStatus = UploadedImage.statusList.pending;
+        uploadForRemoveBG()["catch"](function (e) {
+          UploadedImage.removebgApiStatus = UploadedImage.statusList.error;
+          console.warn(e);
+        });
+        calledRemovebg = true;
+      }
+    }
 
+    resetRemoveBG(this.checked);
 
-    DISPLAY_MOSAICS();
-  }; // container for sliders input
+    if (!calledRemovebg) {
+      appendCropperImageToDOM(typeSTR);
+    }
+  };
+
+  function uploadForRemoveBG() {
+    return _uploadForRemoveBG.apply(this, arguments);
+  } // container for sliders input
   // document.getElementById('slidersContent').onchange = handleClicks;
   // container for the cropper tools
 
+
+  function _uploadForRemoveBG() {
+    _uploadForRemoveBG = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee() {
+      var url, csrftoken, headers, imageField, formData;
+      return _regenerator["default"].wrap(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              url = 'removebg/';
+              csrftoken = getCookie('csrftoken');
+              headers = {
+                'X-CSRFToken': csrftoken,
+                'Accept': '*/*'
+              };
+              imageField = UploadedImage.file;
+
+              if (imageField) {
+                _context.next = 6;
+                break;
+              }
+
+              throw new Error('no uploaded image found');
+
+            case 6:
+              formData = new FormData();
+              formData.append("image_file", imageField);
+              _context.next = 10;
+              return fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: headers
+              }).then(function (resp) {
+                // resp is a readable stream
+                var reader = resp.body.getReader();
+                return new ReadableStream({
+                  start: function start(controller) {
+                    return pump();
+
+                    function pump() {
+                      return reader.read().then(function (_ref) {
+                        var done = _ref.done,
+                            value = _ref.value;
+
+                        // When no more data needs to be consumed, close the stream
+                        if (done) {
+                          controller.close();
+                          return;
+                        } // Enqueue the next data chunk into our target stream
+
+
+                        controller.enqueue(value);
+                        return pump();
+                      });
+                    } // end pump
+
+                  } // end start
+
+                });
+              }) // Create a new response out of the stream
+              .then(function (rs) {
+                return new Response(rs);
+              }) // Create an object URL for the response
+              .then(function (response) {
+                return response.blob();
+              }) // save the created url to be revoked upon new upload of image
+              .then(function (blob) {
+                UploadedImage.removebg_uploadedImageURL = URL.createObjectURL(blob); // for when nobg and original are two separate elemts to be swapped into the cropper
+                // let nobgImg = document.createElement('img');
+                // nobgImg.src = UploadedImage.removebg_uploadedImageURL;
+                // UploadedImage.removebg = nobgImg;
+                // call apply to dom
+
+                appendCropperImageToDOM('removebg');
+                UploadedImage.removebgApiStatus = UploadedImage.statusList.success;
+              });
+
+            case 10:
+            case "end":
+              return _context.stop();
+          }
+        }
+      }, _callee);
+    }));
+    return _uploadForRemoveBG.apply(this, arguments);
+  }
 
   document.getElementById('cropToolbar').onclick = handleClicks; // container for mosaic tool controls
 
@@ -2347,7 +2455,7 @@ var Globals = require('./globals.js');
       // user is changing the crop of the image!!!
 
       case 'cropper':
-        if (!CROPPER.cropped) {
+        if (!CROPPER || !CROPPER.cropped) {
           break;
         } // zoom, rotate
 
@@ -2359,8 +2467,8 @@ var Globals = require('./globals.js');
       case 'caman':
         // console.table(Object.keys(Caman.prototype));
         // if no image uplaoded yet, cancel slider move and reset values
-        if (UPLOADED_IMAGE.image == 'none') {
-          UPLOADED_IMAGE.resetAllFilters();
+        if (UploadedImage.file === null) {
+          UploadedImage.resetAllFilters();
           break;
         } // if reset, reset the slider
 
@@ -2373,19 +2481,19 @@ var Globals = require('./globals.js');
         var preset = target.getAttribute('data-preset'); // if reset all
 
         if (data.method == 'reset') {
-          UPLOADED_IMAGE.usePreset = false;
-          UPLOADED_IMAGE.resetAllFilters();
+          UploadedImage.resetPresets();
+          UploadedImage.resetAllFilters();
         } else if (preset) {
           // a preset button hit
           // reset all sliders
-          UPLOADED_IMAGE.resetAllFilters(); // apply selected preset
+          UploadedImage.resetAllFilters(); // apply selected preset
 
-          UPLOADED_IMAGE.usePreset = true;
-          UPLOADED_IMAGE.preset = data.method;
+          UploadedImage.usePreset = true;
+          UploadedImage.preset = data.method;
         } else {
           // a slider change
           // store slider value
-          UPLOADED_IMAGE.setFilterList(data.method, data.value);
+          UploadedImage.setFilterList(data.method, data.value);
           console.log("method: ".concat(data.method, ", value: ").concat(data.value));
         } // apply filter to cropped canvas
 
@@ -2433,7 +2541,7 @@ var Globals = require('./globals.js');
       case 'plateHeight':
       case 'plateWidth':
         // no crop initialized, so no need to adjust the crop box
-        if (!CROPPER.cropped || UPLOADED_IMAGE.image == 'none') {
+        if (!CROPPER || !CROPPER.cropped || UploadedImage.file === null) {
           CROPPER_OPTIONS.aspectRatio = Globals.aspectRatio;
           CROPPER.setAspectRatio(Globals.aspectRatio);
           break;
@@ -2443,7 +2551,7 @@ var Globals = require('./globals.js');
         var currentCBD = CROPPER.getCropBoxData();
         CROPPER_OPTIONS.aspectRatio = Globals.aspectRatio; // set ratio triggers the crop event, don't call need to call display mosaics then
 
-        UPLOADED_IMAGE.callOnCrop = false;
+        UploadedImage.callOnCrop = false;
         CROPPER.setAspectRatio(Globals.aspectRatio); // let centerLEFT = currentCBD.width * .5 + currentCBD.left;
         // let centerTOP = currentCBD.height * .5 + currentCBD.top;
 
@@ -2457,7 +2565,7 @@ var Globals = require('./globals.js');
           // top: !changingWidth ? centerTOP - (newHeight*.5) : currentCBD.top,
 
         };
-        UPLOADED_IMAGE.callOnCrop = false;
+        UploadedImage.callOnCrop = false;
         CROPPER.setCropBoxData(newCBDdata);
         break;
 
@@ -2488,7 +2596,7 @@ var Globals = require('./globals.js');
 
 
   function getFilterPrep(done) {
-    var canvas = UPLOADED_IMAGE.moasicOptions.canvas;
+    var canvas = UploadedImage.moasicOptions.canvas;
     var imgData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
     var copyCanvas = canvas.cloneNode();
     copyCanvas.getContext('2d').putImageData(imgData, 0, 0);
@@ -2499,7 +2607,7 @@ var Globals = require('./globals.js');
       done = function done(resp) {
         console.log(resp); // pass same options but use the copy canvas so the filters aren't layered on previous filters;
 
-        var ops = Object.assign({}, UPLOADED_IMAGE.moasicOptions, {
+        var ops = Object.assign({}, UploadedImage.moasicOptions, {
           filterCanvas: resp
         });
         canvasPreview(ops); // for dev see what the non-tiled cropped section looks like
@@ -2522,12 +2630,12 @@ var Globals = require('./globals.js');
     done = prep.done;
     Caman(canvas, function () {
       // use caman preset if preset bool
-      if (UPLOADED_IMAGE.usePreset) {
-        this[UPLOADED_IMAGE.preset]();
+      if (UploadedImage.usePreset) {
+        this[UploadedImage.preset]();
       }
 
-      if (UPLOADED_IMAGE.applyFilters) {
-        for (var _i2 = 0, _Object$entries2 = Object.entries(UPLOADED_IMAGE.filterList); _i2 < _Object$entries2.length; _i2++) {
+      if (UploadedImage.applyFilters) {
+        for (var _i2 = 0, _Object$entries2 = Object.entries(UploadedImage.filterList); _i2 < _Object$entries2.length; _i2++) {
           var _Object$entries2$_i = (0, _slicedToArray2["default"])(_Object$entries2[_i2], 2),
               key = _Object$entries2$_i[0],
               value = _Object$entries2$_i[1];
@@ -2654,7 +2762,7 @@ var Globals = require('./globals.js');
 
 })(window);
 
-},{"./AutoFace.js":1,"./ConvertPhoto.js":2,"./RawImage.js":3,"./globals.js":4,"@babel/runtime/helpers/interopRequireDefault":12,"@babel/runtime/helpers/slicedToArray":17,"@babel/runtime/helpers/typeof":19}],6:[function(require,module,exports){
+},{"./AutoFace.js":1,"./ConvertPhoto.js":2,"./UploadedImage.js":3,"./globals.js":4,"@babel/runtime/helpers/asyncToGenerator":9,"@babel/runtime/helpers/interopRequireDefault":12,"@babel/runtime/helpers/slicedToArray":17,"@babel/runtime/helpers/typeof":19,"@babel/runtime/regenerator":21}],6:[function(require,module,exports){
 function _arrayLikeToArray(arr, len) {
   if (len == null || len > arr.length) len = arr.length;
 
