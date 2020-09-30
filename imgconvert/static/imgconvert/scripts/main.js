@@ -414,6 +414,10 @@ const AutoFace = require('./AutoFace.js');
         if (/^image\/\w+/.test(file.type)) {
           // save file to image object
           UploadedImage.file = file;
+
+          // clear previous cropper instance if exists
+          if( CROPPER && CROPPER.cropped ){ CROPPER.destroy(); }
+
           // revoke previous image and removebg image if exists on each new image upload
           if (UploadedImage.original_uploadedImageURL) {
             URL.revokeObjectURL(UploadedImage.original_uploadedImageURL);
@@ -431,8 +435,6 @@ const AutoFace = require('./AutoFace.js');
           // clear values pertaining to previous image upload
           UploadedImage.startFresh();
 
-          // clear previous cropper instance if exists
-          if( CROPPER && CROPPER.cropped ){ CROPPER.destroy(); }
           // a new upload so type is original
           appendCropperImageToDOM('original');
 
