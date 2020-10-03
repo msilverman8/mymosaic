@@ -757,16 +757,16 @@ const AutoFace = require('./AutoFace.js');
     formData.append("image_file", imageField);
 
     // make the call
-    await fetch(url, {
+    let response = await fetch(url, {
         method: 'POST',
         body: formData,
         headers: headers,
-    })
-    // for now only handles streaming response body
-    .then(resp => {
+    });
+
+    if(response.ok){
       // resp is a readable stream
-      const reader = resp.body.getReader();
-      return new ReadableStream({
+      const reader = response.body.getReader();
+      const stream = await new ReadableStream({
         start(controller) {
           return pump();
           function pump() {
@@ -783,19 +783,56 @@ const AutoFace = require('./AutoFace.js');
           } // end pump
         } // end start
       });
-    })
-    // Create a new response out of the stream
-    .then(rs => new Response(rs))
-    // Create an object URL for the response
-    .then(response => response.blob())
-    // save the created url to be revoked upon new upload of image
-    .then(blob => {
+      // Create a new response out of the stream
+      const resp = await new Response(stream);
+      // Create an object URL for the response
+      const blob = await resp.blob();
+      // save the created url to be revoked upon new upload of image
       UploadedImage.removebg_uploadedImageURL = URL.createObjectURL(blob);
       // call apply to dom
       appendCropperImageToDOM('removebg');
       // update api call status
       UploadedImage.removebgApiStatus = UploadedImage.statusList.success;
-    });
+
+    }
+    else {
+      console.log(response);
+      UploadedImage.removebgApiStatus = UploadedImage.statusList.error;
+    }
+    // for now only handles streaming response body
+    // .then(resp => {
+    //   // resp is a readable stream
+    //   const reader = resp.body.getReader();
+    //   return new ReadableStream({
+    //     start(controller) {
+    //       return pump();
+    //       function pump() {
+    //         return reader.read().then(({ done, value }) => {
+    //           // When no more data needs to be consumed, close the stream
+    //           if (done) {
+    //               controller.close();
+    //               return;
+    //           }
+    //           // Enqueue the next data chunk into our target stream
+    //           controller.enqueue(value);
+    //           return pump();
+    //         });
+    //       } // end pump
+    //     } // end start
+    //   });
+    // })
+    // // Create a new response out of the stream
+    // .then(rs => new Response(rs))
+    // // Create an object URL for the response
+    // .then(response => response.blob())
+    // // save the created url to be revoked upon new upload of image
+    // .then(blob => {
+    //   UploadedImage.removebg_uploadedImageURL = URL.createObjectURL(blob);
+    //   // call apply to dom
+    //   appendCropperImageToDOM('removebg');
+    //   // update api call status
+    //   UploadedImage.removebgApiStatus = UploadedImage.statusList.success;
+    // });
     // .catch(console.error);
   }
 

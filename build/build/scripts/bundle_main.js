@@ -2379,7 +2379,7 @@ var AutoFace = require('./AutoFace.js'); // 3rd party imports
 
   function _uploadForRemoveBG() {
     _uploadForRemoveBG = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee() {
-      var url, csrftoken, headers, imageField, formData;
+      var url, csrftoken, headers, imageField, formData, response, reader, stream, resp, blob;
       return _regenerator["default"].wrap(function _callee$(_context) {
         while (1) {
           switch (_context.prev = _context.next) {
@@ -2412,50 +2412,70 @@ var AutoFace = require('./AutoFace.js'); // 3rd party imports
                 method: 'POST',
                 body: formData,
                 headers: headers
-              }) // for now only handles streaming response body
-              .then(function (resp) {
-                // resp is a readable stream
-                var reader = resp.body.getReader();
-                return new ReadableStream({
-                  start: function start(controller) {
-                    return pump();
-
-                    function pump() {
-                      return reader.read().then(function (_ref) {
-                        var done = _ref.done,
-                            value = _ref.value;
-
-                        // When no more data needs to be consumed, close the stream
-                        if (done) {
-                          controller.close();
-                          return;
-                        } // Enqueue the next data chunk into our target stream
-
-
-                        controller.enqueue(value);
-                        return pump();
-                      });
-                    } // end pump
-
-                  } // end start
-
-                });
-              }) // Create a new response out of the stream
-              .then(function (rs) {
-                return new Response(rs);
-              }) // Create an object URL for the response
-              .then(function (response) {
-                return response.blob();
-              }) // save the created url to be revoked upon new upload of image
-              .then(function (blob) {
-                UploadedImage.removebg_uploadedImageURL = URL.createObjectURL(blob); // call apply to dom
-
-                appendCropperImageToDOM('removebg'); // update api call status
-
-                UploadedImage.removebgApiStatus = UploadedImage.statusList.success;
               });
 
             case 10:
+              response = _context.sent;
+
+              if (!response.ok) {
+                _context.next = 27;
+                break;
+              }
+
+              // resp is a readable stream
+              reader = response.body.getReader();
+              _context.next = 15;
+              return new ReadableStream({
+                start: function start(controller) {
+                  return pump();
+
+                  function pump() {
+                    return reader.read().then(function (_ref) {
+                      var done = _ref.done,
+                          value = _ref.value;
+
+                      // When no more data needs to be consumed, close the stream
+                      if (done) {
+                        controller.close();
+                        return;
+                      } // Enqueue the next data chunk into our target stream
+
+
+                      controller.enqueue(value);
+                      return pump();
+                    });
+                  } // end pump
+
+                } // end start
+
+              });
+
+            case 15:
+              stream = _context.sent;
+              _context.next = 18;
+              return new Response(stream);
+
+            case 18:
+              resp = _context.sent;
+              _context.next = 21;
+              return resp.blob();
+
+            case 21:
+              blob = _context.sent;
+              // save the created url to be revoked upon new upload of image
+              UploadedImage.removebg_uploadedImageURL = URL.createObjectURL(blob); // call apply to dom
+
+              appendCropperImageToDOM('removebg'); // update api call status
+
+              UploadedImage.removebgApiStatus = UploadedImage.statusList.success;
+              _context.next = 29;
+              break;
+
+            case 27:
+              console.log(response);
+              UploadedImage.removebgApiStatus = UploadedImage.statusList.error;
+
+            case 29:
             case "end":
               return _context.stop();
           }

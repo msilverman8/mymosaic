@@ -179,12 +179,13 @@ class PostImageForRemoveBg(APIView):
 
         # with f.open('rb') as img:
         response = requests.post(
-            # 'https://api.remove.bg/v1.0/removebg',
-            'http://127.0.0.1:3000/file/fake/',
+            'https://api.remove.bg/v1.0/removebg',
+            # 'http://127.0.0.1:3000/file/fake/',
             files={'image_file': f},
             data={'size': 'auto'},
             headers={
-                'Accept': 'image/*',
+                'Accept': 'image/*, */*',  # response
+                # 'Accept': 'application/json',  # response.data.result_b64
                 'X-Api-Key': settings.REMOVEBG_API_KEY},
         )
 
@@ -200,7 +201,7 @@ class PostImageForRemoveBg(APIView):
                 return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             print("Error:", response.status_code, response.text)
-            return response
+            return Response(response)
 
 
 class SetColorData(APIView):
